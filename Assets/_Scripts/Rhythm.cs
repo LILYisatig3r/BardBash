@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Rhythm : MonoBehaviour {
 
+    private 
+
 	// Use this for initialization
 	void Start () {
 		
