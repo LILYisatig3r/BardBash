@@ -13,6 +13,9 @@ public class Door_On_Enter : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        cam.GetComponent<CameraController>().target = transform.parent;
+        if (collision.gameObject.tag.Equals("Player"))
+        {
+            cam.GetComponent<CameraController>().target = transform.parent;
+        }
     }
 }

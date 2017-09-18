@@ -12,7 +12,6 @@ public class Projectile : MonoBehaviour {
 
     void Update()
     {
-        print(lifespan);
         lifespan -= Time.deltaTime;
         if (lifespan <= 0)
         {
@@ -32,5 +31,23 @@ public class Projectile : MonoBehaviour {
             direction.x = -5;
         }
         _rigidbody.velocity = new Vector2(direction.x * speed, direction.y * speed);
+    }
+
+    void OnTriggerEnter2D(Collider2D c)
+    {
+        if (c.GetComponent<EnemyController>() != null)
+        {
+            EnemyController enemy = c.gameObject.GetComponent<EnemyController>();
+            enemy.health -= 1;
+            if (enemy.health == 0)
+            {
+                Destroy(enemy.gameObject);
+            }
+            Destroy(gameObject);
+        }
+        else if (c.gameObject.tag.Equals("Terrain"))
+        {
+            Destroy(gameObject);
+        }
     }
 }
