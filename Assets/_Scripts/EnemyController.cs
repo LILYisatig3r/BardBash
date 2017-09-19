@@ -7,11 +7,9 @@ public class EnemyController : MonoBehaviour
     public float speed = 2;
     public int health = 3;
 
-    private CircleCollider2D hitbox;
-
     private void Start()
     {
-        hitbox = GetComponent<CircleCollider2D>();
+
     }
 
     private void Update()
