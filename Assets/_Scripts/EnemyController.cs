@@ -14,16 +14,6 @@ public class EnemyController : MonoBehaviour
         hitbox = GetComponent<CircleCollider2D>();
     }
 
-    private void Update()
-    {
-        //if (player != null)
-        //{
-        //    float X = player.position.x - transform.position.x;
-        //    float Y = player.position.y - transform.position.y;
-        //    transform.Translate((new Vector2(X, Y).normalized) * Time.deltaTime * speed);
-        //}
-    }
-
     //private void OnDrawGizmos()
     //{
     //    if (_aggroCollider == null)
