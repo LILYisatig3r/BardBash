@@ -26,9 +26,10 @@ public class Projectile : MonoBehaviour {
 
         transform.position = position;
         _rigidbody = GetComponent<Rigidbody2D>();
+        direction = direction.normalized;
         if (direction.x == 0 && direction.y == 0)
         {
-            direction.x = -5;
+            direction.x = -1;
         }
         _rigidbody.velocity = new Vector2(direction.x * speed, direction.y * speed);
     }

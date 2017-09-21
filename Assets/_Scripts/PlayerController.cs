@@ -5,16 +5,20 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour {
 
-    public delegate void BeatAction(string action);
+    public delegate void BeatAction(KeyCode action);
     public static event BeatAction Used;
 
+    private float frameCounter = 0;
     public float moveSpeed = 5.0f;
     private Rigidbody2D _rigidbody;
-    private Vector2 directionMemory;
+    public Vector2 directionMemory;
     private Vector2[] spawnPositions;
 
     [SerializeField]
     private Transform projectilePrefab;
+    [SerializeField]
+    private Transform weaponPrefab;
+    Weapon _weapon;
     [SerializeField]
     private Transform enemyPrefab;
 
@@ -28,25 +32,19 @@ public class PlayerController : MonoBehaviour {
 
     private void Update ()
     {
+        frameCounter--;
+        if (frameCounter == 0)
+            ResetEffects();
+    }
+
+    private void FixedUpdate()
+    {
+        Vector2 lastFrameVelocity = _rigidbody.velocity;
         _rigidbody.velocity = new Vector2(Input.GetAxisRaw("Horizontal") * moveSpeed, Input.GetAxisRaw("Vertical") * moveSpeed);
 
-        if (_rigidbody.velocity.x != 0 || _rigidbody.velocity.y != 0)
+        if (_rigidbody.velocity.magnitude == 0.0 && lastFrameVelocity.magnitude > 0.0)
         {
-            directionMemory = _rigidbody.velocity;
-        }
-        
-        if (moveSpeed > 5.0f)
-        {
-            moveSpeed = 5.0f;
-        }
-
-        if (_rigidbody.velocity.x < 0)
-        {
-            // Face left
-        }
-        else
-        {
-            // Face right
+            directionMemory = lastFrameVelocity;
         }
     }
 
@@ -55,15 +53,11 @@ public class PlayerController : MonoBehaviour {
         Event e = Event.current;
         if (e.isKey)
         {
-            if (e.keyCode == KeyCode.Space)
+            if (e.keyCode != KeyCode.H)
             {
-                Used("attack");
+                Used(e.keyCode);
             }
-            else if (e.keyCode == KeyCode.J)
-            {
-                Used("dash");
-            }
-            else if (e.keyCode == KeyCode.H)
+            else
             {
                 Transform h = Instantiate(enemyPrefab) as Transform;
                 float r = Random.Range(0, 3);
@@ -87,12 +81,31 @@ public class PlayerController : MonoBehaviour {
     {
         Transform p = Instantiate(projectilePrefab) as Transform;
         Projectile projectile = p.GetComponent<Projectile>();
-        projectile.Spawn(transform.position, directionMemory);
+        Vector2 input = _rigidbody.velocity.magnitude < 0.1 ? directionMemory : _rigidbody.velocity;
+        projectile.Spawn(transform.position, input);
     }
 
     public void Dash()
     {
-        moveSpeed = 100.0f;
+        moveSpeed = 15.0f;
+        frameCounter = 5;
     }
 
+    public void Melee()
+    {
+        Transform w = Instantiate(weaponPrefab) as Transform;
+        _weapon = w.GetComponent<Weapon>();
+        _weapon.Attack(this);
+        frameCounter = 5;
+    }
+
+    public void ResetEffects()
+    {
+        moveSpeed = 5.0f;
+        if (_weapon != null)
+        {
+            Destroy(_weapon.gameObject);
+            _weapon = null;
+        }
+    }
 }

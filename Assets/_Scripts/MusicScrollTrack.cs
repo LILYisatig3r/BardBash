@@ -40,7 +40,7 @@ public class MusicScrollTrack : MonoBehaviour
         //print("Three: " + (lineThreeX));
 
         float finalLineOneX = lineOneX/5000f;
-        Debug.Log(finalLineOneX);
+        //Debug.Log(finalLineOneX);
 
         line.positionCount = 2;
         line.SetPosition(0, new Vector3((finalLineOneX), 1, -1));
@@ -64,7 +64,7 @@ public class MusicScrollTrack : MonoBehaviour
 
         if (finalLineOneX < 0)
         {
-            Debug.LogWarning("Removed");
+            //Debug.LogWarning("Removed");
             KEvents.RemoveAt(0);
             //print(KEvents.Count);
         }

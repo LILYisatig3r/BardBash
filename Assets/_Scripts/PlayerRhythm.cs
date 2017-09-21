@@ -9,18 +9,20 @@ public class PlayerRhythm : MonoBehaviour {
     PlayerController pc;
     private float frameDelay = 0;
     private float preFrameDelay = 0;
-    private Dictionary<string, Action> actions;
-    private string preppedAction = "";
+    private Dictionary<KeyCode, Action> actions;
+    private KeyCode preppedAction;
 
 	void Start () {
         pc = GetComponent<PlayerController>();
 
         Koreographer.Instance.RegisterForEvents("shoot", OnMusicalShoot);
         PlayerController.Used += TryAction;
+        ControllerInput.Pressed += TryAction;
 
-        actions = new Dictionary<string, Action>();
-        actions.Add("attack", pc.Shoot);
-        actions.Add("dash", pc.Dash);
+        actions = new Dictionary<KeyCode, Action>();
+        actions.Add(KeyCode.Space, pc.Shoot);
+        actions.Add(KeyCode.J, pc.Dash);
+        actions.Add(KeyCode.K, pc.Melee);
 	}
 
     void OnDisable()
@@ -28,7 +30,7 @@ public class PlayerRhythm : MonoBehaviour {
         PlayerController.Used -= TryAction;
     }
 
-    private void TryAction(string action)
+    private void TryAction(KeyCode action)
     {
         if (frameDelay > 0)
         {
@@ -48,7 +50,7 @@ public class PlayerRhythm : MonoBehaviour {
         }
     }
 
-    void Update()
+    void FixedUpdate()
     {
         if (preFrameDelay > 0 && frameDelay > 0)
         {
@@ -59,7 +61,7 @@ public class PlayerRhythm : MonoBehaviour {
             }
             frameDelay = 0;
             preFrameDelay = 0;
-            preppedAction = "";
+            preppedAction = KeyCode.At;
         }
 
         if (frameDelay > 0)
