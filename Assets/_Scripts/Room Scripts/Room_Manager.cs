@@ -26,6 +26,7 @@ public class Room_Manager : MonoBehaviour
         dm = transform.parent.GetComponent<Dungeon_Manager>();
         wallSprites = new SpriteRenderer[topWalls.Length];
         exploredSprite = fogOfWar.GetComponent<SpriteRenderer>();
+        fadeStartTime = -10;
 
         int i = 0;
         foreach (GameObject go in topWalls)
@@ -34,6 +35,11 @@ public class Room_Manager : MonoBehaviour
             i++;
         }
 	}
+
+    private void Start()
+    {
+        exploredSprite.color = new Color(1f, 1f, 1f, 1);
+    }
 
     private void Update()
     {
