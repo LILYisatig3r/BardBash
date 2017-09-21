@@ -19,44 +19,32 @@ public class MusicScrollTrack : MonoBehaviour
     void Start()
     {
         KoreographyTrackBase KYT = KY.GetTrackByID("shoot");
-
         KEvents.AddRange(KYT.GetAllEvents());
         line = gameObject.AddComponent<LineRenderer>();
-
-
     }
 
     // Update is called once per frame
     void Update()
     {
-
         lineOneX = KEvents[0].StartSample;
-
         lineTwoX = KEvents[1].StartSample;
-
         lineThreeX = KEvents[2].StartSample;
 
-
         int offSet = Koreographer.GetSampleTime();
-
-        lineOneX = lineOneX - offSet;
+        lineOneX -= offSet;
         lineTwoX -= offSet;
         lineThreeX -= offSet;
 
-
-
-
-        print("One: " + (lineOneX));
+        //print("One: " + (lineOneX));
         //print("Two: " + (lineTwoX));
         //print("Three: " + (lineThreeX));
 
-        float finalLineOneX = lineOneX / 1000000;
-
-        print(finalLineOneX);
+        float finalLineOneX = lineOneX/5000f;
+        Debug.Log(finalLineOneX);
 
         line.positionCount = 2;
-        line.SetPosition(0, new Vector3((lineOneX / 100000f), 1, -1));
-        line.SetPosition(1, new Vector3((lineOneX / 100000f), 0, -1));
+        line.SetPosition(0, new Vector3((finalLineOneX), 1, -1));
+        line.SetPosition(1, new Vector3((finalLineOneX), 0, -1));
         line.SetWidth(.5f, .5f);
         line.useWorldSpace = true;
 
@@ -74,11 +62,11 @@ public class MusicScrollTrack : MonoBehaviour
         line.useWorldSpace = true;
         */
 
-        if (lineOneX < offSet)
+        if (finalLineOneX < 0)
         {
-            print("Removed");
+            Debug.LogWarning("Removed");
             KEvents.RemoveAt(0);
-            print(KEvents.Count);
+            //print(KEvents.Count);
         }
 
     }
