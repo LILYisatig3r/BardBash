@@ -4,18 +4,18 @@ using UnityEngine;
 
 public class Door_On_Enter : MonoBehaviour
 {
-    private Camera cam;
+    private Room_Manager manager;
 
-    private void Start()
+    private void Awake()
     {
-        cam = Camera.main;
+        manager = transform.parent.GetComponent<Room_Manager>();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.gameObject.tag.Equals("Player"))
         {
-            cam.GetComponent<CameraController>().target = transform.parent;
+            manager.ActivateRoom();
         }
     }
 }
