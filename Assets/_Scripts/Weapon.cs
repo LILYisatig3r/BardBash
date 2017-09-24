@@ -32,7 +32,7 @@ public class Weapon : MonoBehaviour {
         {
             EnemyController enemy = c.gameObject.GetComponent<EnemyController>();
             enemy.health -= 3;
-            if (enemy.health == 0)
+            if (enemy.health <= 0)
             {
                 Destroy(enemy.gameObject);
             }

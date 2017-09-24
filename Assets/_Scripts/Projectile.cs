@@ -24,7 +24,7 @@ public class Projectile : MonoBehaviour {
         SpriteRenderer sr = GetComponent<SpriteRenderer>();
         sr.color = Random.ColorHSV();
 
-        transform.position = position;
+        transform.position = new Vector3(position.x, position.y, -0.5f);
         _rigidbody = GetComponent<Rigidbody2D>();
         direction = direction.normalized;
         if (direction.x == 0 && direction.y == 0)
@@ -40,7 +40,7 @@ public class Projectile : MonoBehaviour {
         {
             EnemyController enemy = c.gameObject.GetComponent<EnemyController>();
             enemy.health -= 1;
-            if (enemy.health == 0)
+            if (enemy.health <= 0)
             {
                 Destroy(enemy.gameObject);
             }
