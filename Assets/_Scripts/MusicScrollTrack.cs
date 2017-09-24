@@ -33,7 +33,7 @@ public class MusicScrollTrack : MonoBehaviour
         {
             Vector3 firstSpritePos = this.transform.parent.position;
             firstSpritePos.z = -1;
-            firstSpritePos.y = firstSpritePos.y - verticalOffset;
+            firstSpritePos.y = firstSpritePos.y - 3;
             this.transform.position = firstSpritePos;
             return;
         }
@@ -53,7 +53,7 @@ public class MusicScrollTrack : MonoBehaviour
 
         //THIS STILL NEEDS SPITE OFFSET
         spritePos.x = spritePos.x + finalLineOneX;
-        spritePos.y = spritePos.y - verticalOffset;
+        spritePos.y = spritePos.y - 3;
         spritePos.z = -1;
 
         this.transform.position = spritePos;
