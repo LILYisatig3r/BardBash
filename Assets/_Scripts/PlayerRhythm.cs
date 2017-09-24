@@ -11,11 +11,12 @@ public class PlayerRhythm : MonoBehaviour {
     private float preFrameDelay = 0;
     private Dictionary<KeyCode, Action> actions;
     private KeyCode preppedAction;
+    public string trackName;
 
 	void Start () {
         pc = GetComponent<PlayerController>();
 
-        Koreographer.Instance.RegisterForEvents("shoot", OnMusicalShoot);
+        Koreographer.Instance.RegisterForEvents(trackName, OnMusicalShoot);
         PlayerController.Used += TryAction;
         ControllerInput.Pressed += TryAction;
 
@@ -57,6 +58,7 @@ public class PlayerRhythm : MonoBehaviour {
             Action a;
             if (actions.TryGetValue(preppedAction, out a))
             {
+                print("cudda shot");
                 a.Invoke();
             }
             frameDelay = 0;

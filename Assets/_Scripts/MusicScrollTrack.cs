@@ -8,65 +8,59 @@ public class MusicScrollTrack : MonoBehaviour
 {
 
     public Koreography KY;
-    public Koreographer KR;
     public List<KoreographyEvent> KEvents;
 
-    public LineRenderer line, line2, line3;
-    public int lineOneX, lineTwoX, lineThreeX;
-    public int past;
+    public int lineOneX;
+    public int whichBeat;
+    public GameObject parent;
+    public string trackName;
 
     // Use this for initialization
     void Start()
     {
-        KoreographyTrackBase KYT = KY.GetTrackByID("shoot");
+        KoreographyTrackBase KYT = KY.GetTrackByID(trackName);
         KEvents.AddRange(KYT.GetAllEvents());
-        line = gameObject.AddComponent<LineRenderer>();
+        parent = this.transform.parent.gameObject;
     }
 
     // Update is called once per frame
     void Update()
     {
-        lineOneX = KEvents[0].StartSample;
-        lineTwoX = KEvents[1].StartSample;
-        lineThreeX = KEvents[2].StartSample;
+        float verticalOffset = Screen.height / 100;
+
+        //If whichBeat is set to -1 then it's the still beat in the center of the screen that others hit.
+        if (whichBeat == -1)
+        {
+            Vector3 firstSpritePos = this.transform.parent.position;
+            firstSpritePos.z = -1;
+            firstSpritePos.y = firstSpritePos.y - verticalOffset;
+            this.transform.position = firstSpritePos;
+            return;
+        }
+        int closestBeat = KEvents[0].StartSample;
+        lineOneX = KEvents[whichBeat].StartSample;
 
         int offSet = Koreographer.GetSampleTime();
-        lineOneX -= offSet;
-        lineTwoX -= offSet;
-        lineThreeX -= offSet;
 
-        //print("One: " + (lineOneX));
-        //print("Two: " + (lineTwoX));
-        //print("Three: " + (lineThreeX));
+        closestBeat -= offSet;
+        lineOneX -= offSet;
 
         float finalLineOneX = lineOneX/5000f;
-        //Debug.Log(finalLineOneX);
 
-        line.positionCount = 2;
-        line.SetPosition(0, new Vector3((finalLineOneX), 1, -1));
-        line.SetPosition(1, new Vector3((finalLineOneX), 0, -1));
-        line.SetWidth(.5f, .5f);
-        line.useWorldSpace = true;
+        Vector3 spritePos = parent.transform.position;
 
-        /*
-        line.positionCount = 2;
-        line.SetPosition(0, new Vector3((lineTwoX) / 1000, 1, -1));
-        line.SetPosition(1, new Vector3((lineTwoX) / 1000, 0, -1));
-        line.SetWidth(.5f, .5f);
-        line.useWorldSpace = true;
 
-        line.positionCount = 2;
-        line.SetPosition(0, new Vector3((lineThreeX) / 1000, 1, -1));
-        line.SetPosition(1, new Vector3((lineThreeX) / 1000, 0, -1));
-        line.SetWidth(.5f, .5f);
-        line.useWorldSpace = true;
-        */
 
-        if (finalLineOneX < 0)
+        //THIS STILL NEEDS SPITE OFFSET
+        spritePos.x = spritePos.x + finalLineOneX;
+        spritePos.y = spritePos.y - verticalOffset;
+        spritePos.z = -1;
+
+        this.transform.position = spritePos;
+
+        if (closestBeat < 0)
         {
-            //Debug.LogWarning("Removed");
             KEvents.RemoveAt(0);
-            //print(KEvents.Count);
         }
 
     }
