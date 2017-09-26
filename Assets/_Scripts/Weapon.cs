@@ -20,7 +20,6 @@ public class Weapon : MonoBehaviour {
         float angle = Vector2.Angle(new Vector2(1, 0), direction);
         if (direction.y < 0)
             angle *= -1;
-        print(angle);
         transform.position = new Vector3(attacker.transform.position.x + direction.x
             , attacker.transform.position.y + 0.5f + direction.y, -0.5f);
         transform.Rotate(new Vector3(0,0,angle));
