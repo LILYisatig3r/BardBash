@@ -13,9 +13,12 @@ public class PlayerController : MonoBehaviour {
     int latencyDelay = 0;
     KeyCode preppedInput;
     public float moveSpeed = 5.0f;
+
     private Rigidbody2D _rigidbody;
     public Vector2 directionMemory;
     private Vector2[] spawnPositions;
+
+    [SerializeField] private GameManager gm;
 
     [SerializeField]
     private Transform projectilePrefab;
@@ -31,6 +34,8 @@ public class PlayerController : MonoBehaviour {
         spawnPositions = new Vector2[3];
         spawnPositions[0] = new Vector2(-17.5f, -1.0f);
         spawnPositions[1] = new Vector2();
+        //maxHp = 20;
+        //curHp = maxHp;
     }
 
     private void Update ()
@@ -82,6 +87,7 @@ public class PlayerController : MonoBehaviour {
     public void Shoot()
     {
         BeatUpdate();
+        //gm.ActorDamaged(gameObject, 1);
         Transform p = Instantiate(projectilePrefab) as Transform;
         Projectile projectile = p.GetComponent<Projectile>();
         Vector2 input = _rigidbody.velocity.magnitude < 0.1 ? directionMemory : _rigidbody.velocity;
@@ -169,54 +175,4 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
-    /**
-     * Legacy Code *
-     * Put old code that you don't want to delete here.
-     * Make sure to label it properly!
-     **/
-
-    /** Enemy spawner
-     * Place this in the "OnGui" method to have 'H' spawn an enemy
-     **/
-    //if (e.keyCode != KeyCode.H)
-    //{
-    //    Used(e.keyCode);
-    //}
-    //else
-    //{
-    //    Transform h = Instantiate(enemyPrefab) as Transform;
-    //    float r = Random.Range(0, 3);
-    //    if (r >= 0 && r< 1)
-    //    {
-    //        h.position = new Vector2(Random.Range(-5.62f, 5.3f), Random.Range(-3.2f, 0.75f));
-    //    }
-    //    else if (r >= 1 && r< 2)
-    //    {
-    //        h.position = new Vector2(Random.Range(-18.0f, -7.08f), Random.Range(-12.57f, -0.45f));
-    //    }
-    //    else
-    //    {
-    //        h.position = new Vector2(Random.Range(-30.4f, -19.52f), Random.Range(-7.0f, -3.08f));
-    //    }
-    //}
-
-    /**
-     * OnGui input
-     * Detects key presses using the OnGui method
-     **/
-
-    //void OnGUI()
-    //{
-    //    Event e = Event.current;
-    //    if (e.isKey && inputLockout <= 0)
-    //    {
-    //        if (!e.keyCode.Equals(KeyCode.W) && !e.keyCode.Equals(KeyCode.A)
-    //            && !e.keyCode.Equals(KeyCode.S) && !e.keyCode.Equals(KeyCode.D) && !e.keyCode.Equals(KeyCode.None))
-    //        {
-    //            print("pressed");
-    //            Pressed(e.keyCode);
-    //            inputLockout = 7;
-    //        }
-    //    }
-    //}
 }
