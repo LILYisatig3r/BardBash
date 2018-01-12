@@ -20,6 +20,8 @@ public class S_EnemyController : S_Actor {
         if (gm != null || GameManager.TryGetInstance(out gm))
             gm.AddActor(gameObject);
         actions = new Dictionary<KeyCode, S_Action>();
+        ac = GetComponentInChildren<S_AnimationController>();
+        ac.SetActor(actorName);
 
         S_Action move;
         S_Actions.TryGetAction("actorMove", out move);

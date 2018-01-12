@@ -14,6 +14,7 @@ public class S_BattleRhythm : MonoBehaviour {
     private bool playing;
     private LinkedList<S_Actor> orchestra;
     private int chair;
+    private S_Actor lastMusician;
     private S_Actor activeMusician;
     private float remainingMeasures;
     private CameraController cameraController;
@@ -56,6 +57,7 @@ public class S_BattleRhythm : MonoBehaviour {
 
                 if (remainingMeasures <= 0)
                 {
+                    lastMusician = activeMusician;
                     activeMusician = orchestra.First.Value;
                     remainingMeasures = activeMusician.GetMeasures();
                     orchestra.AddLast(orchestra.First.Value);
@@ -74,6 +76,7 @@ public class S_BattleRhythm : MonoBehaviour {
         while (cameraController.moving)
             yield return new WaitForSeconds(0.1f);
         currentState = State.playing;
+        lastMusician.ResetAnimation();
     }
 
     public S_Actor GetActiveMusician()

@@ -15,20 +15,21 @@ public class S_AnimationController : MonoBehaviour {
 
     [SerializeField] Koreographer koreographer;
     [SerializeField] string trackName;
+    [SerializeField] string actorName;
     [SerializeField] float bpm;
     [SerializeField] int frames;
 
 	void Start () {
         //Koreographer.Instance.RegisterForEvents(trackName, SyncAnimation);
-        animationName = "a_Wiz1";
+        animationName = actorName + "Idle";
 
         animations = new Dictionary<KeyCode, string>();
-        animations.Add(KeyCode.None, "a_Wiz1");
-        animations.Add(KeyCode.UpArrow, "a_Wiz1");
-        animations.Add(KeyCode.RightArrow, "a_Wiz1");
-        animations.Add(KeyCode.DownArrow, "a_Wiz1");
-        animations.Add(KeyCode.LeftArrow, "a_Wiz1");
-        animations.Add(KeyCode.Q, "a_WizCasting");
+        animations.Add(KeyCode.None, actorName + "Idle");
+        animations.Add(KeyCode.UpArrow, actorName + "Idle");
+        animations.Add(KeyCode.RightArrow, actorName + "Idle");
+        animations.Add(KeyCode.DownArrow, actorName + "Idle");
+        animations.Add(KeyCode.LeftArrow, actorName + "Idle");
+        animations.Add(KeyCode.Q, actorName + "Casting");
 
 
         sr = GetComponent<SpriteRenderer>();
@@ -46,14 +47,19 @@ public class S_AnimationController : MonoBehaviour {
         {
             animator.Play(animationName);
             //Koreographer.Instance.UnregisterForAllEvents(this);
-            animationName = "a_Wiz1";
+            animationName = actorName + "Idle";
             syncLock = 0;
         }
     }
 
+    public void SetActor(string a)
+    {
+        actorName = a;
+    }
+
     public void SetAnimation(string a)
     {
-        animationName = a;
+        animationName = actorName + a;
     }
 
     public void SyncUnlock()

@@ -50,8 +50,12 @@ public class GameManager : MonoBehaviour {
             actors[a] = actor = a.GetComponent<S_Actor>();
 
         DataTile destTile = map.GetTile((int)destination.x, (int)destination.z);
-        if (destTile.type == DataTile.tileType.grass)
+        if (destTile.type == DataTile.tileType.grass && !destTile.occupied)
+        {
+            map.GetTile((int)actor.position.x, (int)actor.position.z).occupied = false;
+            destTile.occupied = true;
             return destination;
+        }
         else
             return new Vector3(-1f, -1f, -1f);
     }
@@ -62,7 +66,9 @@ public class GameManager : MonoBehaviour {
         if (!actors.TryGetValue(a, out actor))
             actors[a] = actor = a.GetComponent<S_Actor>();
 
-        return map.GetRandomWalkableTile();
+        DataTile spawnPoint = map.GetRandomWalkableTile();
+        spawnPoint.occupied = true;
+        return map.OccupyRandomWalkableTile();
     }
 
     public void AddActor(GameObject a)

@@ -16,6 +16,7 @@ public class S_Actor : MonoBehaviour {
 
     [Header("Other")]
     [SerializeField] protected GameManager gm;
+    protected S_AnimationController ac;
     private float clock;
     public Vector3 position;
     public Vector3 directionMemory;
@@ -96,6 +97,11 @@ public class S_Actor : MonoBehaviour {
     #endregion
 
     #region External Functions
+
+    public void ResetAnimation()
+    {
+        ac.SetAnimation("Idle");
+    }
 
     virtual public void ReceiveBeat()
     {

@@ -80,7 +80,7 @@ public class S_Actions : MonoBehaviour {
         projectile.Spawn(a.transform.position, pc.directionMemory);
 
         S_AnimationController ac = a.GetComponentInChildren<S_AnimationController>();
-        ac.SetAnimation("a_WizCasting");
+        ac.SetAnimation("Casting");
 
         pc.AnimationUpdate();
         pc.preppedInput = KeyCode.None;

@@ -8,7 +8,7 @@ public class S_PlayerController : S_Actor {
 
     #region Members
     private Rigidbody2D rb;
-    private S_AnimationController ac;
+    //private S_AnimationController ac;
 
     //public Vector3 directionMemory;
     int latencyDelay = 0;
@@ -29,6 +29,7 @@ public class S_PlayerController : S_Actor {
     #region Monobehaviour
     void Start () {
         ac = GetComponentInChildren<S_AnimationController>();
+        ac.SetActor(actorName);
         rb = GetComponent<Rigidbody2D>();
         actions = new Dictionary<KeyCode, S_Action>();
 

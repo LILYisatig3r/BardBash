@@ -8,12 +8,15 @@ public class DataTile {
         magic = 3
     }
 
+    public tileType type { get; set; }
+    public bool occupied { get; set; }
+    //private bool fog;
+
     public DataTile()
     {
         type = tileType.water;
+        occupied = false;
         //fog = false;
     }
 
-    public tileType type { get; set; }
-    //private bool fog;
 }

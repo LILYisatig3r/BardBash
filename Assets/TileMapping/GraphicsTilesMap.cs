@@ -189,18 +189,30 @@ public class GraphicsTilesMap : MonoBehaviour {
     #region Pubilc Methods
     public Vector3 GridToWorldPosition(Vector3 gridPos)
     {
-
         return gridPos;
     }
 
-    public Vector3 GetRandomWalkableTile()
+    public DataTile GetRandomWalkableTile()
     {
         List<Vector3> walkables = new List<Vector3>();
         for (int z = 0; z < sizeZ; z++)
             for (int x = 0; x < sizeX; x++)
-                if (data.tiles[x, z].type == DataTile.tileType.grass)
+                if (data.tiles[x, z].type == DataTile.tileType.grass && !data.tiles[x,z].occupied)
                     walkables.Add(new Vector3(x, 0f, z));
-        return walkables[Random.Range(0, walkables.Count)];
+        Vector3 tilePosition = walkables[Random.Range(0, walkables.Count)];
+        return GetTile((int)tilePosition.x, (int)tilePosition.y);
+    }
+
+    public Vector3 OccupyRandomWalkableTile()
+    {
+        List<Vector3> walkables = new List<Vector3>();
+        for (int z = 0; z < sizeZ; z++)
+            for (int x = 0; x < sizeX; x++)
+                if (data.tiles[x, z].type == DataTile.tileType.grass && !data.tiles[x, z].occupied)
+                    walkables.Add(new Vector3(x, 0f, z));
+        Vector3 tilePosition = walkables[Random.Range(0, walkables.Count)];
+        GetTile((int)tilePosition.x, (int)tilePosition.y).occupied = true;
+        return tilePosition;
     }
 
     public DataTile GetTile(int x, int y)
