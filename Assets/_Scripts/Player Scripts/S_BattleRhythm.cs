@@ -7,22 +7,25 @@ public class S_BattleRhythm : MonoBehaviour {
     public enum State
     {
         playing,
-        transitioning
+        transitioning,
+        preview,
+        finished
     }
 
-    private State currentState;
+    public State currentState;
     private bool playing;
     private LinkedList<S_Actor> orchestra;
     private int chair;
     private S_Actor lastMusician;
     private S_Actor activeMusician;
     private float remainingMeasures;
+    private float previewMeasures;
     private CameraController cameraController;
 
 	void Start () {
         orchestra = new LinkedList<S_Actor>();
         cameraController = Camera.main.GetComponent<CameraController>();
-        //currentState = State.playing;
+        previewMeasures = 1f;
         playing = false;
 	}
 
@@ -52,7 +55,7 @@ public class S_BattleRhythm : MonoBehaviour {
             remainingMeasures = activeMusician.GetMeasures();
             currentState = State.transitioning;
             cameraController.target = activeMusician.transform;
-            StartCoroutine("CameraTransition");
+            StartCoroutine("CameraTransition1");
         }
 
         return orchestra.Remove(musician);
@@ -74,24 +77,64 @@ public class S_BattleRhythm : MonoBehaviour {
                 {
                     lastMusician = activeMusician;
                     activeMusician = orchestra.First.Value;
-                    remainingMeasures = activeMusician.GetMeasures();
+                    remainingMeasures = previewMeasures;
                     orchestra.AddLast(orchestra.First.Value);
                     orchestra.RemoveFirst();
 
                     currentState = State.transitioning;
-                    cameraController.target = activeMusician.transform;
-                    StartCoroutine("CameraTransition");
+                    cameraController.target = null;
+                    cameraController.targets = orchestra;
+                    StartCoroutine("CameraTransition1");
                 }
+                break;
+
+            case State.preview:
+                if (remainingMeasures >= 0)
+                {
+                    remainingMeasures -= 0.25f;
+                }
+
+                if (remainingMeasures <= 0)
+                {
+                    remainingMeasures = activeMusician.GetMeasures();
+                    currentState = State.transitioning;
+                    cameraController.target = activeMusician.transform;
+                    cameraController.targets = null;
+                    StartCoroutine("CameraTransition2");
+                }
+                
+                break;
+
+            case State.finished:
+                activeMusician = orchestra.First.Value;
+                activeMusician.ResetAnimation();
+                cameraController.target = activeMusician.transform;
+                cameraController.targets = null;
+                cameraController.SetCameraSize(currentState);
                 break;
         }
     }
 
-    private IEnumerator CameraTransition()
+    private IEnumerator CameraTransition1()
+    {
+        while (cameraController.moving)
+            yield return new WaitForSeconds(0.1f);
+        currentState = State.preview;
+        cameraController.SetCameraSize(currentState);
+        lastMusician.ResetAnimation();
+    }
+
+    private IEnumerator CameraTransition2()
     {
         while (cameraController.moving)
             yield return new WaitForSeconds(0.1f);
         currentState = State.playing;
-        lastMusician.ResetAnimation();
+        cameraController.SetCameraSize(currentState);
+    }
+
+    public int GetMusicianCount()
+    {
+        return orchestra.Count;
     }
 
     public S_Actor GetActiveMusician()

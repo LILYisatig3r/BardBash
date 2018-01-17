@@ -2,6 +2,7 @@
 public class DataTile {
     public enum TileType
     {
+        none = -1,
         grass = 0,
         water = 1,
         stone = 2,

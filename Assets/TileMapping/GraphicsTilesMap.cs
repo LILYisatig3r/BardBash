@@ -78,6 +78,28 @@ public class GraphicsTilesMap : MonoBehaviour {
 
     private void BuildTexture()
     {
+        Color[][] tiles = ExtractTiles();
+
+        int textureWidth = sizeX * tileRes;
+        int textureHeight = sizeZ * tileRes;
+        Texture2D texture = new Texture2D(textureWidth, textureHeight);
+
+        for (int i = 0; i < sizeZ; i++)
+        {
+            for (int j = 0; j < sizeX; j++)
+            {
+                Color[] p = tiles[((int)data.GetTile(j, i).type * 4) + Random.Range(0,4)];
+                texture.SetPixels(j*tileRes, i*tileRes, tileRes, tileRes, p);
+            }
+        }
+        texture.filterMode = FilterMode.Point;
+        texture.Apply();
+        mr.sharedMaterials[0].color = Color.white;
+        mr.sharedMaterials[0].mainTexture = texture;
+    }
+
+    public void BuildData()
+    {
         data = new DataTilesMap(sizeX, sizeZ);
         int w = 0;
         int k = 0;
@@ -99,29 +121,11 @@ public class GraphicsTilesMap : MonoBehaviour {
                 w++;
         }
         data.BuildCorridors();
-
-        Color[][] tiles = ExtractTiles();
-
-        int textureWidth = sizeX * tileRes;
-        int textureHeight = sizeZ * tileRes;
-        Texture2D texture = new Texture2D(textureWidth, textureHeight);
-
-        for (int i = 0; i < sizeZ; i++)
-        {
-            for (int j = 0; j < sizeX; j++)
-            {
-                Color[] p = tiles[((int)data.GetTile(j, i).type * 4) + Random.Range(0,4)];
-                texture.SetPixels(j*tileRes, i*tileRes, tileRes, tileRes, p);
-            }
-        }
-        texture.filterMode = FilterMode.Point;
-        texture.Apply();
-        mr.sharedMaterials[0].color = Color.white;
-        mr.sharedMaterials[0].mainTexture = texture;
     }
 
     public void BuildMesh()
     {
+        BuildData();
 
         int vsizeX = sizeX + 1;
         int vsizeZ = sizeZ + 1;
@@ -134,21 +138,39 @@ public class GraphicsTilesMap : MonoBehaviour {
         int[] triangles = new int[(sizeX * sizeZ) * 2 * 3];
 
         int x, z;
-        //float uvX = 1f / vsizeX;
-        //float _uvX = 0;
-        //float uvZ = 1f / vsizeZ;
-        //float _uvZ = 0;
         for (z = 0; z<vsizeZ; z++)
         {
             for (x = 0; x<vsizeX; x++)
             {
                 int index = z * vsizeX + x;
-                vertices[index] = new Vector3(x * tileSize, 0, z * tileSize);
+                float y = 1;
+                //DataTile.TileType thisType = DataTile.TileType.none;
+                //DataTile.TileType[] neighbors = new DataTile.TileType[3];
+                //neighbors[0] = neighbors[1] = neighbors[2] = DataTile.TileType.none;
+                //if (x < vsizeX - 1 && z < vsizeZ - 1)
+                //    thisType = data.tiles[x, z].type;
+                //if (x > 0 && z < vsizeZ - 1)
+                //    neighbors[0] = data.tiles[x - 1, z].type;
+                //if (z > 0 && x < vsizeX - 1)
+                //    neighbors[2] = data.tiles[x, z - 1].type;
+                //if (x > 0 && z > 0)
+                //    neighbors[1] = data.tiles[x - 1, z - 1].type;
+
+                //if (thisType != DataTile.TileType.none)
+                //{
+                //    if (thisType == DataTile.TileType.grass || neighbors[0] == DataTile.TileType.grass
+                //        || neighbors[1] == DataTile.TileType.grass || neighbors[2] == DataTile.TileType.grass)
+                //        y = 1;
+                //    else if (thisType == DataTile.TileType.water && neighbors[0] == DataTile.TileType.water
+                //        && neighbors[1] == DataTile.TileType.water && neighbors[2] == DataTile.TileType.water)
+                //        y = Random.Range(0f, 0.5f);
+                //    else
+                //        y = Random.Range(1.1f, 2f);
+                //}
+
+                vertices[index] = new Vector3(x * tileSize, y, z * tileSize);
                 normals[index] = Vector3.up;
                 uv[index] = new Vector2((float)x / sizeX, (float)z / sizeZ);
-                //_uvX += uvX;
-                //_uvZ += uvZ;
-                //Debug.Log(_uvX);
             }
         }
 

@@ -94,7 +94,8 @@ public class GameManager : MonoBehaviour {
         if (!actors.TryGetValue(a, out actor))
             actors[a] = a.GetComponent<S_Actor>();
 
-        battleRhythm.RemoveMusician(a);
+        if (battleRhythm.RemoveMusician(a) && battleRhythm.GetMusicianCount() <= 1)
+            FinishBattle();
         Destroy(a);
     }
 
@@ -107,12 +108,17 @@ public class GameManager : MonoBehaviour {
         battleRhythm.BeatUpdate();
     }
 
+    private void FinishBattle()
+    {
+        battleRhythm.currentState = S_BattleRhythm.State.finished;
+    }
+
     void ReceiveBeat(KoreographyEvent e)
     {
-        //foreach (KeyValuePair<GameObject, Actor> kvp in actors)
-        //    kvp.Value.ReceiveBeat();
-
-        battleRhythm.GetActiveMusician().ReceiveBeat();
+        if (battleRhythm.currentState == S_BattleRhythm.State.playing)
+            battleRhythm.GetActiveMusician().ReceiveBeat();
+        else
+            battleRhythm.BeatUpdate();
     }
 
     public S_Actor CheckTileOccupant(Vector3 tile)
