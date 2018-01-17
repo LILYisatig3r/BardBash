@@ -7,7 +7,7 @@ using SonicBloom.Koreo;
 public class S_PlayerController : S_Actor {
 
     #region Members
-    private Rigidbody2D rb;
+    private Rigidbody rb;
     //private S_AnimationController ac;
 
     //public Vector3 directionMemory;
@@ -28,9 +28,9 @@ public class S_PlayerController : S_Actor {
 
     #region Monobehaviour
     void Start () {
-        ac = GetComponentInChildren<S_AnimationController>();
+        ac = transform.GetChild(0).GetComponent<S_AnimationController>();
         ac.SetActor(actorName);
-        rb = GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody>();
         actions = new Dictionary<KeyCode, S_Action>();
 
         S_Action rest;
@@ -44,17 +44,23 @@ public class S_PlayerController : S_Actor {
         actions.Add(KeyCode.DownArrow, move);
         actions.Add(KeyCode.LeftArrow, move);
 
-        S_Action shoot;
-        S_Actions.TryGetAction("playerShoot", out shoot);
-        actions.Add(KeyCode.Q, shoot);
+        S_Action ability1;
+        S_Actions.TryGetAction(a1, out ability1);
+        actions.Add(KeyCode.Q, ability1);
 
-        S_Action dash;
-        S_Actions.TryGetAction("playerDash", out dash);
-        actions.Add(KeyCode.W, dash);
+        S_Action ability2;
+        S_Actions.TryGetAction(a2, out ability2);
+        actions.Add(KeyCode.W, ability2);
+
+        S_Action ability3;
+        S_Actions.TryGetAction(a2, out ability3);
+        actions.Add(KeyCode.E, ability3);
+
+        S_Action ability4;
+        S_Actions.TryGetAction(a2, out ability4);
+        actions.Add(KeyCode.R, ability4);
 
         preppedInput = KeyCode.None;
-
-        measures = 2f;
 
         if (gm != null || GameManager.TryGetInstance(out gm))
             gm.AddActor(gameObject);
@@ -82,6 +88,10 @@ public class S_PlayerController : S_Actor {
             preppedInput = KeyCode.Q;
         else if (Input.GetKeyDown(KeyCode.W) && latencyDelay < 0)
             preppedInput = KeyCode.W;
+        else if (Input.GetKeyDown(KeyCode.Q) && latencyDelay < 0)
+            preppedInput = KeyCode.E;
+        else if (Input.GetKeyDown(KeyCode.W) && latencyDelay < 0)
+            preppedInput = KeyCode.R;
         if (Input.anyKeyDown)
         {
             ac.ReceiveAction(preppedInput);
@@ -176,7 +186,7 @@ public class S_PlayerController : S_Actor {
         Transform p = Instantiate(projectilePrefab) as Transform;
         Projectile projectile = p.GetComponent<Projectile>();
         //Vector2 input = rb.velocity.magnitude < 0.1 ? directionMemory : rb.velocity;
-        projectile.Spawn(transform.position, directionMemory);
+        projectile.Spawn(transform.position, directionMemory, magic);
     }
 
     public void Dash(params object[] args)

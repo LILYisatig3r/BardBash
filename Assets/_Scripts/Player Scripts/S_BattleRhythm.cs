@@ -43,6 +43,21 @@ public class S_BattleRhythm : MonoBehaviour {
         remainingMeasures = activeMusician.GetMeasures();
     }
 
+    public bool RemoveMusician(GameObject m)
+    {
+        S_Actor musician = m.GetComponent<S_Actor>();
+        if (musician.Equals(activeMusician))
+        {
+            activeMusician = orchestra.First.Value;
+            remainingMeasures = activeMusician.GetMeasures();
+            currentState = State.transitioning;
+            cameraController.target = activeMusician.transform;
+            StartCoroutine("CameraTransition");
+        }
+
+        return orchestra.Remove(musician);
+    }
+
     public void BeatUpdate()
     {
         switch (currentState)

@@ -144,6 +144,7 @@ public class DataTilesMap {
 
     int[,] AS_weights;
     public DataTile[,] tiles { get; set; }
+    public Dictionary<Vector2, S_Actor> occupancies;
     List<Room> rooms;
 
     public DataTilesMap (int w, int h)
@@ -208,20 +209,20 @@ public class DataTilesMap {
 
         for (int TnB = 0; TnB < width; TnB++)
         {
-            tiles[TnB + x, y].type = tiles[TnB + x, y + height - 1].type = DataTile.tileType.stone;
+            tiles[TnB + x, y].type = tiles[TnB + x, y + height - 1].type = DataTile.TileType.stone;
             AS_weights[TnB + x, y] = AS_weights[TnB + x, y + height - 1] = 5;
         }
 
         for (int LnR = 0; LnR < height - 1; LnR++)
         {
-            tiles[x, LnR + y].type = tiles[x + width - 1, LnR + y].type = DataTile.tileType.stone;
+            tiles[x, LnR + y].type = tiles[x + width - 1, LnR + y].type = DataTile.TileType.stone;
             AS_weights[x, LnR + y] = AS_weights[x + width - 1, LnR + y] = 5;
         }
 
         for (int Y = 1; Y < height - 1; Y++)
             for (int X = 1; X < width - 1; X++)
             {
-                tiles[X + x, Y + y].type = DataTile.tileType.grass;
+                tiles[X + x, Y + y].type = DataTile.TileType.grass;
                 AS_weights[X + x, Y + y] = 1;
             }
 
@@ -249,26 +250,26 @@ public class DataTilesMap {
                 List<AS_Node> path = A_Star(room, potentialPaths.Values[c]);
                 foreach (AS_Node node in path)
                 {
-                    tiles[node.x, node.y].type = DataTile.tileType.grass;
+                    tiles[node.x, node.y].type = DataTile.TileType.grass;
                     AS_weights[node.x, node.y] = 1;
                     for (int n = 0; n < 4; n++)
                     {
-                        if (node.x > 0 && tiles[node.x - 1, node.y].type == DataTile.tileType.water)
+                        if (node.x > 0 && tiles[node.x - 1, node.y].type == DataTile.TileType.water)
                             Stoneify(node.x - 1, node.y);
-                        if (node.x < size_x - 1 && tiles[node.x + 1, node.y].type == DataTile.tileType.water)
+                        if (node.x < size_x - 1 && tiles[node.x + 1, node.y].type == DataTile.TileType.water)
                             Stoneify(node.x + 1, node.y);
-                        if (node.y > 0 && tiles[node.x, node.y - 1].type == DataTile.tileType.water)
+                        if (node.y > 0 && tiles[node.x, node.y - 1].type == DataTile.TileType.water)
                             Stoneify(node.x, node.y - 1);
-                        if (node.y < size_y - 1 && tiles[node.x, node.y + 1].type == DataTile.tileType.water)
+                        if (node.y < size_y - 1 && tiles[node.x, node.y + 1].type == DataTile.TileType.water)
                             Stoneify(node.x, node.y + 1);
 
-                        if (node.y < size_y - 1 && node.x > 0 && tiles[node.x - 1, node.y + 1].type == DataTile.tileType.water)
+                        if (node.y < size_y - 1 && node.x > 0 && tiles[node.x - 1, node.y + 1].type == DataTile.TileType.water)
                             Stoneify(node.x - 1, node.y + 1);
-                        if (node.y < size_y - 1 && node.x < size_x - 1 && tiles[node.x + 1, node.y + 1].type == DataTile.tileType.water)
+                        if (node.y < size_y - 1 && node.x < size_x - 1 && tiles[node.x + 1, node.y + 1].type == DataTile.TileType.water)
                             Stoneify(node.x + 1, node.y + 1);
-                        if (node.y > 0 && node.x > 0 && tiles[node.x - 1, node.y - 1].type == DataTile.tileType.water)
+                        if (node.y > 0 && node.x > 0 && tiles[node.x - 1, node.y - 1].type == DataTile.TileType.water)
                             Stoneify(node.x - 1, node.y - 1);
-                        if (node.y < size_y - 1 && node.x < size_x - 1 && tiles[node.x + 1, node.y - 1].type == DataTile.tileType.water)
+                        if (node.y < size_y - 1 && node.x < size_x - 1 && tiles[node.x + 1, node.y - 1].type == DataTile.TileType.water)
                             Stoneify(node.x + 1, node.y - 1);
                     }
                 }
@@ -278,7 +279,7 @@ public class DataTilesMap {
 
     private void Stoneify(int x, int y)
     {
-        tiles[x, y].type = DataTile.tileType.stone;
+        tiles[x, y].type = DataTile.TileType.stone;
         AS_weights[x, y] = 5;
     }
     #endregion

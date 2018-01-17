@@ -8,14 +8,25 @@ public class S_Actor : MonoBehaviour {
     [Header("Actor Stats")]
     [SerializeField] protected string actorName;
     [SerializeField] protected int speed;
-    [SerializeField] public int maxHp;
-    [SerializeField] public int curHp;
-    [SerializeField] protected int attack;
-    [SerializeField] protected int defense;
+    [SerializeField] public float maxHp;
+    [SerializeField] public float curHp;
+    [SerializeField] protected float attack;
+    [SerializeField] protected float magic;
+    [SerializeField] protected float defense;
+    [SerializeField] protected float magicDefense;
     [SerializeField] public float measures;
+
+    [Header("Abilities")]
+    [SerializeField] protected string a1;
+    [SerializeField] protected string a2;
+    [SerializeField] protected string a3;
+    [SerializeField] protected string a4;
 
     [Header("Other")]
     [SerializeField] protected GameManager gm;
+    [SerializeField] protected TextMesh popupText;
+    //[SerializeField] protected S_Instrument instrument;
+
     protected S_AnimationController ac;
     private float clock;
     public Vector3 position;
@@ -39,44 +50,64 @@ public class S_Actor : MonoBehaviour {
         speed = s;
     }
 
-    public int GetMaxHp()
+    public float GetMaxHp()
     {
         return maxHp;
     }
 
-    public void SetMaxHp(int hp)
+    public void SetMaxHp(float hp)
     {
         maxHp = hp;
     }
 
-    public int GetCurrentHp()
+    public float GetCurrentHp()
     {
         return curHp;
     }
 
-    public void SetCurrentHp(int hp)
+    public void SetCurrentHp(float hp)
     {
         curHp = hp;
     }
 
-    public int GetAttack()
+    public float GetAttack()
     {
         return attack;
     }
 
-    public void SetAttack(int a)
+    public void SetAttack(float a)
     {
         attack = a;
     }
 
-    public int GetDefense()
+    public float GetMagic()
+    {
+        return magic;
+    }
+
+    public void SetMagic(float m)
+    {
+        magic = m;
+    }
+
+    public float GetDefense()
     {
         return defense;
     }
 
-    public void SetDefense(int d)
+    public void SetDefense(float d)
     {
         defense = d;
+    }
+
+    public float GetMagicDefense()
+    {
+        return magicDefense;
+    }
+
+    public void SetMagicDefense(float md)
+    {
+        magicDefense = md;
     }
 
     public float GetMeasures()
@@ -94,9 +125,41 @@ public class S_Actor : MonoBehaviour {
         return measures;
     }
 
+    public string[] GetAbilities()
+    {
+        return new string[4] { a1, a2, a3, a4 };
+    }
+
     #endregion
 
     #region External Functions
+
+    public void PopupText(string message)
+    {
+        TextMesh popup = Instantiate(popupText);
+        popup.transform.SetParent(transform);
+        popup.text = message;
+        popup.color = UnityEngine.Random.ColorHSV();
+        popup.transform.position = new Vector3(position.x, position.y + 1f, position.z);
+        StartCoroutine("TextMover",popup);
+    }
+
+    private IEnumerator TextMover(TextMesh t)
+    {
+        float n = 10;
+        Transform tr = t.transform;
+        float x = UnityEngine.Random.Range(tr.position.x - 1f, tr.position.x + 1f);
+        float dx = (x - tr.position.x) / n;
+        float y = UnityEngine.Random.Range(tr.position.y + 1f, tr.position.y + 2f);
+        float dy = (y - tr.position.y) / n;
+        for (int i = 0; i < n; i++)
+        {
+            tr.position = new Vector3(tr.position.x + dx, tr.position.y + dy, tr.position.z);
+            yield return new WaitForSeconds(0.05f);
+        }
+        Destroy(t.gameObject);
+        //StopCoroutine("TextMover");
+    }
 
     public void ResetAnimation()
     {

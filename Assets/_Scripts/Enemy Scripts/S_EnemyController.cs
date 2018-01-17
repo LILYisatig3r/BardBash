@@ -20,7 +20,7 @@ public class S_EnemyController : S_Actor {
         if (gm != null || GameManager.TryGetInstance(out gm))
             gm.AddActor(gameObject);
         actions = new Dictionary<KeyCode, S_Action>();
-        ac = GetComponentInChildren<S_AnimationController>();
+        S_AnimationController ac = transform.GetChild(0).GetComponent<S_AnimationController>();
         ac.SetActor(actorName);
 
         S_Action move;
@@ -29,8 +29,6 @@ public class S_EnemyController : S_Actor {
         actions.Add(KeyCode.RightArrow, move);
         actions.Add(KeyCode.DownArrow, move);
         actions.Add(KeyCode.LeftArrow, move);
-
-        measures = 2f;
 
         directionMemory = new Vector3(1, 0, 0);
         position = gm.ActorRandomSpawn(gameObject);

@@ -197,21 +197,21 @@ public class GraphicsTilesMap : MonoBehaviour {
         List<Vector3> walkables = new List<Vector3>();
         for (int z = 0; z < sizeZ; z++)
             for (int x = 0; x < sizeX; x++)
-                if (data.tiles[x, z].type == DataTile.tileType.grass && !data.tiles[x,z].occupied)
+                if (data.tiles[x, z].type == DataTile.TileType.grass && !data.tiles[x,z].occupant)
                     walkables.Add(new Vector3(x, 0f, z));
         Vector3 tilePosition = walkables[Random.Range(0, walkables.Count)];
         return GetTile((int)tilePosition.x, (int)tilePosition.y);
     }
 
-    public Vector3 OccupyRandomWalkableTile()
+    public Vector3 OccupyRandomWalkableTile(S_Actor a)
     {
         List<Vector3> walkables = new List<Vector3>();
         for (int z = 0; z < sizeZ; z++)
             for (int x = 0; x < sizeX; x++)
-                if (data.tiles[x, z].type == DataTile.tileType.grass && !data.tiles[x, z].occupied)
+                if (data.tiles[x, z].type == DataTile.TileType.grass && !data.tiles[x, z].occupant)
                     walkables.Add(new Vector3(x, 0f, z));
         Vector3 tilePosition = walkables[Random.Range(0, walkables.Count)];
-        GetTile((int)tilePosition.x, (int)tilePosition.y).occupied = true;
+        GetTile((int)tilePosition.x, (int)tilePosition.y).occupant = a;
         return tilePosition;
     }
 

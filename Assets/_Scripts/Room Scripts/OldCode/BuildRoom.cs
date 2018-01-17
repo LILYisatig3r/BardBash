@@ -8,7 +8,7 @@ public class BuildRoom : MonoBehaviour
     public GameObject[] topwalls;
     public GameObject[] bottomwalls;
 
-    private WallInfo leftWall, topWall, rightWall, bottomWall;
+    private WallInfo leftWall, rightWall; //topWall, bottomWall;
 
     public BuildRoomManager manager;
 

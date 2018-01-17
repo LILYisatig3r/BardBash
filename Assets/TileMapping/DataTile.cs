@@ -1,6 +1,6 @@
 ﻿
 public class DataTile {
-    public enum tileType
+    public enum TileType
     {
         grass = 0,
         water = 1,
@@ -8,14 +8,16 @@ public class DataTile {
         magic = 3
     }
 
-    public tileType type { get; set; }
-    public bool occupied { get; set; }
+    public TileType type { get; set; }
+    //public bool occupied { get; set; }
+    public S_Actor occupant { get; set; }
     //private bool fog;
 
     public DataTile()
     {
-        type = tileType.water;
-        occupied = false;
+        type = TileType.water;
+        //occupied = false;
+        occupant = null;
         //fog = false;
     }
 

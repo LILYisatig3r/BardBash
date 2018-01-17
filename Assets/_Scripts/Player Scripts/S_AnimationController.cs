@@ -20,7 +20,7 @@ public class S_AnimationController : MonoBehaviour {
     [SerializeField] int frames;
 
 	void Start () {
-        //Koreographer.Instance.RegisterForEvents(trackName, SyncAnimation);
+        S_PlayerController pc = GetComponentInParent<S_PlayerController>();
         animationName = actorName + "Idle";
 
         animations = new Dictionary<KeyCode, string>();
@@ -29,8 +29,11 @@ public class S_AnimationController : MonoBehaviour {
         animations.Add(KeyCode.RightArrow, actorName + "Idle");
         animations.Add(KeyCode.DownArrow, actorName + "Idle");
         animations.Add(KeyCode.LeftArrow, actorName + "Idle");
-        animations.Add(KeyCode.Q, actorName + "Casting");
-
+        string[] abilities = pc.GetAbilities();
+        animations.Add(KeyCode.Q, actorName + abilities[0]);
+        animations.Add(KeyCode.W, actorName + abilities[1]);
+        animations.Add(KeyCode.E, actorName + abilities[2]);
+        animations.Add(KeyCode.R, actorName + abilities[3]);
 
         sr = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
@@ -46,7 +49,6 @@ public class S_AnimationController : MonoBehaviour {
         if (syncLock >= 2)
         {
             animator.Play(animationName);
-            //Koreographer.Instance.UnregisterForAllEvents(this);
             animationName = actorName + "Idle";
             syncLock = 0;
         }
@@ -74,5 +76,4 @@ public class S_AnimationController : MonoBehaviour {
         if (animations.TryGetValue(a, out nextAnimation))
             animationName = nextAnimation;
     }
-
 }

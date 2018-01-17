@@ -11,7 +11,7 @@ public class Agro : MonoBehaviour {
 
     void Start () {
         _aggroCollider = GetComponent<CircleCollider2D>();
-        speed = transform.parent.GetComponent<EnemyController>().speed;
+        speed = transform.parent.GetComponent<S_EnemyController>().GetSpeed();
         body = transform.parent.transform;
     }
 	
