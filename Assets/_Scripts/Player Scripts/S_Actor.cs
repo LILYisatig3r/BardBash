@@ -120,6 +120,16 @@ public class S_Actor : MonoBehaviour {
         measures = m;
     }
 
+    public float GetClock()
+    {
+        return clock;
+    }
+
+    public void SetClock(float c)
+    {
+        clock = c;
+    }
+
     virtual public float GetActionCost()
     {
         return measures;
@@ -164,6 +174,16 @@ public class S_Actor : MonoBehaviour {
     public void ResetAnimation()
     {
         ac.SetAnimation("Idle");
+    }
+
+    virtual public Sprite GetPortrait()
+    {
+        return ac.GetPortrait();
+    }
+
+    virtual public Color GetPrimaryColor()
+    {
+        return ac.GetPrimaryColor();
     }
 
     virtual public void ReceiveBeat()

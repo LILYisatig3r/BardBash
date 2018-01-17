@@ -59,11 +59,11 @@ public class CameraController : MonoBehaviour {
                 minz = Mathf.Min(minz, ap.z);
                 maxz = Mathf.Max(maxz, ap.z);
             }
-            cam.orthographicSize = Mathf.Max((maxx - minx) * 1.41f, maxz - minz) / 3f;
+            cam.orthographicSize = Mathf.Max(3f, Mathf.Max((maxx - minx) * 1.41f, maxz - minz) / 3f);
         }
         else if (state == S_BattleRhythm.State.playing)
             cam.orthographicSize = 3;
         else if (state == S_BattleRhythm.State.finished)
-            cam.orthographicSize = 5;
+            cam.orthographicSize = 4;
     }
 }

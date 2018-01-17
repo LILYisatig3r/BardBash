@@ -13,6 +13,9 @@ public class S_AnimationController : MonoBehaviour {
     private string animationName;
     private short syncLock = 0;
 
+    [SerializeField] Sprite portrait;
+    [SerializeField] Color primaryColor;
+
     [SerializeField] Koreographer koreographer;
     [SerializeField] string trackName;
     [SerializeField] string actorName;
@@ -62,6 +65,16 @@ public class S_AnimationController : MonoBehaviour {
     public void SetAnimation(string a)
     {
         animationName = actorName + a;
+    }
+
+    public Color GetPrimaryColor()
+    {
+        return primaryColor;
+    }
+
+    public Sprite GetPortrait()
+    {
+        return portrait;
     }
 
     public void SyncUnlock()

@@ -143,7 +143,7 @@ public class GraphicsTilesMap : MonoBehaviour {
             for (x = 0; x<vsizeX; x++)
             {
                 int index = z * vsizeX + x;
-                float y = 1;
+                float y = 0;
                 //DataTile.TileType thisType = DataTile.TileType.none;
                 //DataTile.TileType[] neighbors = new DataTile.TileType[3];
                 //neighbors[0] = neighbors[1] = neighbors[2] = DataTile.TileType.none;
@@ -240,6 +240,11 @@ public class GraphicsTilesMap : MonoBehaviour {
     public DataTile GetTile(int x, int y)
     {
         return data.GetTile(x, y);
+    }
+
+    public Vector2 GetSize()
+    {
+        return new Vector2(sizeX, sizeZ);
     }
 
     #endregion

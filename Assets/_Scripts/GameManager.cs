@@ -5,7 +5,7 @@ using SonicBloom.Koreo;
 
 public class GameManager : MonoBehaviour {
 
-    [SerializeField] UIManager ui;
+    [SerializeField] Transform banner;
     [SerializeField] S_PlayerController player;
     [SerializeField] GraphicsTilesMap map;
     [SerializeField] string trackName;
@@ -24,7 +24,10 @@ public class GameManager : MonoBehaviour {
         battleRhythm = GetComponent<S_BattleRhythm>();
         instance = this;
         map.BuildMesh();
+        Vector2 mapSize = map.GetSize();
+        transform.position = new Vector3(mapSize.x / 2, 0, mapSize.y / 2);
         actors = new Dictionary<GameObject, S_Actor>();
+
     }
 
     public void ActorDamaged(GameObject a, float damage)
