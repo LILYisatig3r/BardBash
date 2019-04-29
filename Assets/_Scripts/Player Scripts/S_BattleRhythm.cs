@@ -1,198 +1,433 @@
-﻿using System.Collections;
+﻿using Assets._Scripts;
+using Assets._Scripts.Player_Scripts;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class S_BattleRhythm : MonoBehaviour {
+public partial class S_BattleRhythm : MonoBehaviour {
 
-    public enum State
+    private class MusicianClockComparer : IComparer<S_Actor>
     {
-        starting,
-        playing,
-        transitioning,
-        preview,
-        finished
+        public int Compare(S_Actor a, S_Actor b)
+        {
+            if (Mathf.Approximately(a.clock, b.clock))
+            {
+                if (a is S_PlayerController && b is S_EnemyController)
+                    return -1;
+                else if (b is S_PlayerController && a is S_EnemyController)
+                    return 1;
+                else if (Mathf.Approximately(a.speed, b.speed))
+                    return -1;
+                else if (a.speed < b.speed)
+                    return -1;
+                else if (b.speed > a.speed)
+                    return 1;
+                else
+                    return -1;
+            }
+            else if (a.clock > b.clock)
+                return -1;
+            else if (b.clock > a.clock)
+                return 1;
+            else 
+                return -1;
+        }
     }
 
+    #region Members
+    // Game Manager
+    GameManager gm;
+
+    // Map
+    [SerializeField] public GraphicsTilesMap map;
+
+    // Koreographer
+    //[SerializeField] string trackName;
+    [SerializeField] AudioSource audioSource;
+    [SerializeField] AudioClip track;
+    [SerializeField] private S_Composition composition;
+    [SerializeField] private float beatOffset;
+    [SerializeField] private float beatForgiveness;
+    [SerializeField] public S_SoundEffectsSO sounds;
+    private S_BeatScroller beatScroller;
+
+    // UI
     [SerializeField] Transform banner;
     private Image bannerPortrait;
     private Text bannerName;
     private bool bannerExtended;
+    [SerializeField] Transform turnQueueUI;
+    Image[] turnQueueImages;
 
-    public State currentState;
-    private bool playing;
-    private LinkedList<S_Actor> orchestra;
-    private int chair;
-    private S_Actor lastMusician;
-    private S_Actor activeMusician;
-    private float remainingMeasures;
-    private float previewMeasures;
+    // Battle and Camera state machines
+    private BattleSM battleStateMachine;
     private CameraController cameraController;
+    public Camera cam;
+    public float shakeDuration;
+    public float shakeMagnitude;
 
-	void Start () {
+    // Orchestra
+    public List<S_Actor> players { get; private set; }
+    public LinkedList<S_Actor> orchestra { get; private set; }
+    private float counterThreshold;
+    public List<S_Actor> o { get; private set; }
+    public LinkedList<S_Actor> o2 { get; private set; }
+    public S_Actor lastMusician { get; private set; }
+    public S_Actor activeMusician { get; private set; }
+    public float remainingMeasures { get; private set; }
+    public float previewMeasures { get; private set; }
+    #endregion
+
+    #region Monobehaviour
+
+    void Start () {
+        // Initialize members and references
+        GameManager.TryGetInstance(out gm);
+        players = new List<S_Actor>();
         orchestra = new LinkedList<S_Actor>();
-        cameraController = Camera.main.GetComponent<CameraController>();
-        cameraController.target = transform;
+        o = new List<S_Actor>();
+        o2 = new LinkedList<S_Actor>();
+        cam = Camera.main;
         previewMeasures = 1f;
-        playing = false;
+        counterThreshold = 24f;
+        map.BuildMesh();
+        //composition.Initialize(track, 120f, 0.05f);
+        composition.Initialize(track, 120f, beatOffset, beatForgiveness);
+        composition.BeatHit += OnBeatHit;
+        composition.BeatLost += OnBeatLost;
 
-        currentState = State.starting;
+        // Initialize UI
         banner.transform.localPosition = new Vector3(-130f, 0f, 0f);
         bannerExtended = false;
         bannerPortrait = banner.transform.GetChild(0).GetComponent<Image>();
         bannerName = banner.transform.GetChild(1).GetComponent<Text>();
         StartCoroutine("StartSequence");
+        turnQueueImages = new Image[6];
+        turnQueueImages[0] = turnQueueUI.GetChild(0).GetComponent<Image>();
+        turnQueueImages[1] = turnQueueUI.GetChild(1).GetComponent<Image>();
+        turnQueueImages[2] = turnQueueUI.GetChild(2).GetComponent<Image>();
+        turnQueueImages[3] = turnQueueUI.GetChild(3).GetComponent<Image>();
+        turnQueueImages[4] = turnQueueUI.GetChild(4).GetComponent<Image>();
+        turnQueueImages[5] = turnQueueUI.GetChild(5).GetComponent<Image>();
+
+        // Add all musicians
+        AddAllMusicians();
+
+        // Start state machines
+        battleStateMachine = new BattleSM(this);
+        battleStateMachine.ChangeState(E_BattleState.intro);
+
+        
     }
 
-    public void AddMusician(GameObject m)
+    void Update()
     {
-        S_Actor musician = m.GetComponent<S_Actor>();
-        musician.SetClock(25 / musician.GetSpeed());
-        LinkedListNode<S_Actor> iterator = orchestra.First;
-        while (iterator != null && musician.GetClock() >= iterator.Value.GetClock())
-            iterator = iterator.Next;
-
-        if (iterator != null)
-            orchestra.AddBefore(iterator, musician);
-        else
-            orchestra.AddLast(new LinkedListNode<S_Actor>(musician));
-
-        activeMusician = orchestra.First.Value;
-    }
-
-    public void PopMusician()
-    {
-        S_Actor performer = orchestra.First.Value;
-        float clockDecrement = performer.GetClock();
-        performer.SetClock( 25 / performer.GetSpeed() );
-        orchestra.RemoveFirst();
-        foreach (S_Actor musician in orchestra)
-            musician.SetClock(musician.GetClock() - clockDecrement);
-
-        LinkedListNode<S_Actor> iterator = orchestra.First;
-        while (iterator != null && performer.GetClock() >= iterator.Value.GetClock())
-            iterator = iterator.Next;
-        if (iterator != null)
-            orchestra.AddBefore(iterator, performer);
-        else
-            orchestra.AddLast(new LinkedListNode<S_Actor>(performer));
-
-        activeMusician = orchestra.First.Value;
-    }
-
-    public bool RemoveMusician(GameObject m)
-    {
-        S_Actor musician = m.GetComponent<S_Actor>();
-        if (musician.Equals(activeMusician))
+        composition.Updater(Time.deltaTime);
+        battleStateMachine.ExecuteStateUpdate();
+        //cameraController.Update();
+        if (Input.GetKeyDown(KeyCode.C))
         {
-            activeMusician = orchestra.First.Value;
-            remainingMeasures = activeMusician.GetMeasures();
-            currentState = State.transitioning;
-            cameraController.target = activeMusician.transform;
-            if (bannerExtended)
-                Banner();
-            StartCoroutine("CameraTransition1");
+            ShakeCamera(shakeDuration, 1f);
         }
-
-        return orchestra.Remove(musician);
     }
 
     public void BeatUpdate()
     {
-        switch (currentState)
+        //battleStateMachine.ExecuteBeatUpdate();
+        //battleStateMachine.ExecuteStateUpdate();
+    }
+
+    public void ReceiveInput(Rewired.Player p)
+    {
+        battleStateMachine.GetCurrentState().ReceiveInput(p);
+    }
+
+    public bool CheckPlayerHitBeat()
+    {
+        return composition.CheckForBeatHit(beatForgiveness);
+    }
+
+    public bool TryPlayerAction()
+    {
+        if (composition.CheckForBeatHit(beatForgiveness) && (activeMusician as S_PlayerController).TryAction())
         {
-            case State.playing:
+            composition.HitBeat(beatForgiveness);
+            return true;
+        }
+        return false;
+    }
 
-                if (remainingMeasures >= 0)
+    public void OnBeatHit(object source, EventArgs e)
+    {
+        battleStateMachine.GetCurrentState().OnBeatEvent();
+    }
+
+    public void OnBeatLost(object source, EventArgs e)
+    {
+        battleStateMachine.GetCurrentState().BeatExecute();
+    }
+
+    public void PlaySound(string s)
+    {
+
+    }
+
+    #endregion
+
+    #region Orchestral Operations
+
+    private void AddAllMusicians()
+    {
+        foreach (S_Actor player in gm.playerCharacters)
+        {
+            players.Add(player);
+            AddMusician(player);
+        }
+
+        foreach (S_Actor npc in gm.npcCharacters)
+        {
+            AddMusician(npc);
+        }
+
+        lastMusician = null;
+        ClockTick();
+        activeMusician = o2.First.Value;
+        DrawQueue();
+    }
+
+    public void AddMusician(S_Actor musician)
+    {
+        musician.CombatStatCalculator();
+        musician.clock = musician.speed;
+        o.Add(musician);
+    }
+
+    public void TransitionMusician()
+    {
+        lastMusician = activeMusician;
+        o2.RemoveFirst();
+        ClockTick();
+        activeMusician = o2.First.Value;
+        activeMusician.PrepForNewTurn();
+
+        battleStateMachine.ChangeState(E_BattleState.transitioning);
+        //StartCoroutine("Banner");
+
+        DrawQueue();
+    }
+
+    private void ClockTick()
+    {
+        SortedList<S_Actor, int> addQueue = new SortedList<S_Actor, int>(new MusicianClockComparer());
+        while (o2.Count < 6)
+        {
+            while (addQueue.Count == 0)
+            {
+                foreach (S_Actor musician in o)
                 {
-                    float actionCost = activeMusician.GetActionCost();
-                    remainingMeasures -= actionCost;
+                    musician.clock += musician.speed;
+                    if (musician.clock >= counterThreshold)
+                        addQueue.Add(musician, 0);
                 }
+            }
 
-                if (remainingMeasures <= 0)
-                {
-                    lastMusician = activeMusician;
-                    activeMusician = orchestra.First.Value;
-                    remainingMeasures = previewMeasures;
-                    PopMusician();
+            foreach (KeyValuePair<S_Actor, int> kvp in addQueue)
+            {
+                o2.AddLast(kvp.Key);
+                kvp.Key.clock = kvp.Key.speed;
+            }
 
-                    currentState = State.transitioning;
-                    cameraController.target = null;
-                    cameraController.targets = orchestra;
-                    StartCoroutine("CameraTransition1");
-                    StartCoroutine("Banner");
-                }
-                break;
-
-            case State.preview:
-                if (remainingMeasures >= 0)
-                {
-                    remainingMeasures -= 0.25f;
-                    Debug.Log(remainingMeasures);
-                }
-
-                if (remainingMeasures <= 0)
-                {
-                    remainingMeasures = activeMusician.GetMeasures();
-                    currentState = State.transitioning;
-                    cameraController.target = activeMusician.transform;
-                    cameraController.targets = null;
-                    StartCoroutine("CameraTransition2");
-                    StartCoroutine("Banner");
-                }
-
-                break;
-
-            case State.starting:
-
-                break;
-
-            case State.finished:
-                activeMusician = orchestra.First.Value;
-                activeMusician.ResetAnimation();
-                cameraController.target = activeMusician.transform;
-                cameraController.targets = null;
-                cameraController.SetCameraSize(currentState);
-                break;
+            addQueue.Clear();
         }
     }
+
+    private void AddMusicianToQueue(S_Actor musician)
+    {
+        LinkedListNode<S_Actor> iterator = o2.First;
+        if (iterator == null)
+            o2.AddFirst(musician);
+        else
+        {
+            while (iterator != null)
+            {
+                if ((musician.clock > iterator.Value.clock)
+                    || (musician.clock == iterator.Value.clock && musician.speed < iterator.Value.speed))
+                {
+                    o2.AddBefore(iterator, musician);
+                    break;
+                }
+                iterator = iterator.Next;
+            }
+            if (iterator == null)
+                o2.AddLast(new LinkedListNode<S_Actor>(musician));
+
+            activeMusician = o2.First.Value;
+        }
+
+        musician.clock = musician.speed;
+    }
+
+    public void StartMusicianTurn()
+    {
+        remainingMeasures = activeMusician.GetMeasures();
+        battleStateMachine.ChangeState(E_BattleState.playerControl);
+        //StartCoroutine("Banner");
+    }
+
+    public void RemoveMusician(S_Actor musician)
+    {
+        if (musician.Equals(activeMusician))
+        {
+            activeMusician = orchestra.First.Value;
+            remainingMeasures = activeMusician.GetMeasures();
+            if (bannerExtended)
+                Banner();
+        }
+
+        if (o.Remove(musician))
+        {
+            LinkedListNode<S_Actor> m = o2.First;
+            LinkedListNode<S_Actor> mt = m;
+            while (m != null)
+            {
+                if (m.Value.Equals(musician))
+                {
+                    mt = m.Next;
+                    o2.Remove(m);
+                    m = mt;
+                }
+                else
+                    m = m.Next;
+            }
+            ClockTick();
+            DrawQueue();
+
+            Destroy(musician.gameObject);
+            if (GetMusicianCount() <= 1)
+            {
+                gm.FinishBattle();
+            }
+        }
+    }
+
+    public void MusicianDamaged(S_Actor defender, S_Actor attacker, float damage, bool magic)
+    {
+        float defense = magic ? defender.magicDefense : defender.defense;
+        float piercing = magic ? attacker.magicPiercing : attacker.piercing;
+
+        float damageDealt = Mathf.Max(damage - Mathf.Max(defense - piercing, -piercing * 0.2f), 0f);
+        if (damageDealt > defense * 3)
+        {
+            if (magic)
+                defender.magicDefense -= 1;
+            else
+                defender.defense -= 1;
+        }
+
+        defender.SetCurrentHp(defender.curHp - damageDealt);
+        defender.DamageText("" + damageDealt);
+        //audioSource.PlayOneShot(S_SoundEffectsSO.GetRandomBashSoundEffect());
+        if (defender.GetCurrentHp() <= 0)
+            RemoveMusician(defender);
+    }
+
+    public Vector3 MusicianCanMove(S_Actor actor, Vector3 destination)
+    {
+        DataTile destTile = map.GetTile((int)destination.x, (int)destination.z);
+        if (destTile.type == DataTile.TileType.grass && !destTile.occupant)
+            return destination;
+        else
+            return new Vector3(-1f, -1f, -1f);
+    }
+
+    public Vector3 MusicianMove(S_Actor actor, Vector3 destination)
+    {
+        DataTile destTile = map.GetTile((int)destination.x, (int)destination.z);
+        if (destTile.type == DataTile.TileType.grass && !destTile.occupant)
+        {
+            map.GetTile((int)actor.position.x, (int)actor.position.z).occupant = null;
+            destTile.occupant = actor;
+            return destination;
+        }
+        else
+            return new Vector3(-1f, -1f, -1f);
+    }
+
+    public Vector3 MusicianRandomSpawn(S_Actor actor)
+    {
+        //S_Actor actor;
+        //if (!actors.TryGetValue(a, out actor))
+        //    actors[a] = actor = a.GetComponent<S_Actor>();
+
+        //DataTile spawnPoint = map.GetRandomWalkableTile();
+        //spawnPoint.occupant = actor;
+        return map.OccupyRandomWalkableTile(actor);
+    }
+
+    public void DecrementMeasures(float measures)
+    {
+        remainingMeasures -= measures;
+    }
+
+    private void DrawQueue()
+    {
+        LinkedListNode<S_Actor> l = o2.First;
+        for (int i = 0; i < 6; i++)
+        {
+            turnQueueImages[i].sprite = l.Value.GetPortrait();
+            l = l.Next;
+            if (l == null)
+                l = o2.First;
+        }
+    }
+
+    #endregion
+
+    #region State Machine Operations
+    public void ChangeCameraState(E_CameraState state)
+    {
+        cameraController.ChangeState(state);
+    }
+
+    public void CameraFinishedMovingToNewPlayer()
+    {
+        remainingMeasures = previewMeasures;
+        ChangeBattleState(E_BattleState.playerMenu);
+    }
+
+    public E_BattleState GetBattleState()
+    {
+        return battleStateMachine.GetCurrentEState();
+    }
+
+    public void ChangeBattleState(E_BattleState state)
+    {
+        battleStateMachine.ChangeState(state);
+    }
+    #endregion
 
     private IEnumerator StartSequence()
     {
         while (orchestra.Count == 0 || !Input.anyKey)
             yield return new WaitForEndOfFrame();
 
-        remainingMeasures = 2;
-        cameraController.target = null;
-        cameraController.targets = orchestra;
         activeMusician = orchestra.First.Value;
-        StartCoroutine("CameraTransition1");
-        StartCoroutine("Banner");
-
+        activeMusician.PopupSprite();
+        //StartCoroutine("Banner");
     }
 
-    private IEnumerator CameraTransition1()
+    public void Banner()
     {
-        while (cameraController.moving)
-            yield return new WaitForSeconds(0.1f);
-        currentState = State.preview;
-        cameraController.SetCameraSize(currentState);
-        if (lastMusician)
-            lastMusician.ResetAnimation();
+        StartCoroutine(BannerRoutine());
     }
 
-    private IEnumerator CameraTransition2()
-    {
-        while (cameraController.moving)
-            yield return new WaitForSeconds(0.1f);
-        currentState = State.playing;
-        cameraController.SetCameraSize(currentState);
-    }
-
-    private IEnumerator Banner()
+    private IEnumerator BannerRoutine()
     {
         if (!bannerExtended)
         {
+            Debug.Log("Banner extending!");
             bannerExtended = !bannerExtended;
             bannerPortrait.sprite = activeMusician.GetPortrait();
             bannerName.color = activeMusician.GetPrimaryColor();
@@ -205,6 +440,7 @@ public class S_BattleRhythm : MonoBehaviour {
         }
         else
         {
+            Debug.Log("Banner retracting!");
             bannerExtended = !bannerExtended;
             while (banner.transform.localPosition.x > -130f)
             {
@@ -212,6 +448,54 @@ public class S_BattleRhythm : MonoBehaviour {
                 yield return new WaitForEndOfFrame();
             }
         }
+    }
+
+    public void ShakeCamera(float duration, float magnitude)
+    {
+        StartCoroutine(CameraShake(duration, magnitude));
+    }
+
+    private IEnumerator CameraShake(float duration, float magnitude)
+    {
+        //Vector3 op = cam.transform.position;
+        while (duration > 0f)
+        {
+            float x = UnityEngine.Random.Range(-shakeMagnitude * magnitude, shakeMagnitude * magnitude);
+            float y = UnityEngine.Random.Range(-shakeMagnitude * magnitude, shakeMagnitude * magnitude);
+            float z = UnityEngine.Random.Range(-shakeMagnitude * magnitude, shakeMagnitude * magnitude);
+            Vector3 ctp = cam.transform.position;
+            cam.transform.position = new Vector3(ctp.x + x, ctp.y + y, ctp.z + z);
+
+            duration -= Time.deltaTime;
+            yield return new WaitForEndOfFrame();
+        }
+
+        // cam.transform.position = op;
+    }
+
+    public void PlaySound(AudioClip clip)
+    {
+        audioSource.PlayOneShot(clip);
+    }
+
+    public void PlaySoundInQuickSuccession(AudioClip clip, int repeat)
+    {
+        StartCoroutine(RepeatSound(clip, repeat));
+    }
+
+    private IEnumerator RepeatSound(AudioClip clip, int repeat)
+    {
+        while (repeat > 0)
+        {
+            audioSource.PlayOneShot(clip);
+            yield return new WaitForSeconds(0.1f);
+            repeat--;
+        }
+    }
+
+    public float GetBPM()
+    {
+        return composition.bpm;
     }
 
     public int GetMusicianCount()
@@ -222,5 +506,15 @@ public class S_BattleRhythm : MonoBehaviour {
     public S_Actor GetActiveMusician()
     {
         return activeMusician;
+    }
+
+    public DataTile GetTile(Vector3 tile)
+    {
+        return map.GetTile((int)tile.x, (int)tile.z);
+    }
+
+    public S_Actor CheckTileOccupant(Vector3 tile)
+    {
+        return map.GetTile((int)tile.x, (int)tile.z).occupant;
     }
 }

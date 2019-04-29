@@ -19,11 +19,11 @@ public class S_AnimationController : MonoBehaviour {
     [SerializeField] Koreographer koreographer;
     [SerializeField] string trackName;
     [SerializeField] string actorName;
-    [SerializeField] float bpm;
+    [SerializeField] public float bpm;
     [SerializeField] int frames;
 
 	void Start () {
-        S_PlayerController pc = GetComponentInParent<S_PlayerController>();
+        S_Actor pc = GetComponentInParent<S_Actor>();
         animationName = actorName + "Idle";
 
         animations = new Dictionary<KeyCode, string>();
@@ -41,20 +41,16 @@ public class S_AnimationController : MonoBehaviour {
         sr = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         float bps = bpm / 60f;
-        float fps = GetComponent<Animation>().clip.frameRate;
-        float desiredFPS = bps * frames;
-        float ratio = desiredFPS / fps;
-        animator.speed = desiredFPS / fps;
+        //float fps = GetComponent<Animation>().clip.frameRate;
+        //float desiredFPS = bps * frames;
+        //float ratio = desiredFPS / fps;
+        //animator.speed = desiredFPS / fps;
 	}
 
     void Update()
     {
-        if (syncLock >= 2)
-        {
-            animator.Play(animationName);
-            animationName = actorName + "Idle";
-            syncLock = 0;
-        }
+        if (Input.GetKeyDown(KeyCode.B))
+            animator.SetTrigger("Melee");
     }
 
     public void SetActor(string a)
@@ -62,9 +58,14 @@ public class S_AnimationController : MonoBehaviour {
         actorName = a;
     }
 
-    public void SetAnimation(string a)
+    public void SetAnimatorBool(int param, bool b)
     {
-        animationName = actorName + a;
+        animator.SetBool(param, b);
+    }
+
+    public void SetAnimatorTrigger(int param)
+    {
+        animator.SetTrigger(param);
     }
 
     public Color GetPrimaryColor()
@@ -75,18 +76,5 @@ public class S_AnimationController : MonoBehaviour {
     public Sprite GetPortrait()
     {
         return portrait;
-    }
-
-    public void SyncUnlock()
-    {
-        syncLock += 1;
-    }
-
-    public void ReceiveAction(KeyCode a)
-    {
-        //pcAction = a;
-        string nextAnimation;
-        if (animations.TryGetValue(a, out nextAnimation))
-            animationName = nextAnimation;
     }
 }

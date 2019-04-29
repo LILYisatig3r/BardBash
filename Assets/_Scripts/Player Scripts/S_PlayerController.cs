@@ -3,224 +3,200 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using SonicBloom.Koreo;
+using Rewired;
+using Assets._Scripts;
 
 public class S_PlayerController : S_Actor {
 
-    #region Members
+    #region Hidden Variables
     private Rigidbody rb;
-    //private S_AnimationController ac;
-
-    //public Vector3 directionMemory;
     int latencyDelay = 0;
     float compensatePostBeat = 0;
     float compensatePreBeat = 0;
-    //public KeyCode preppedInput;
-    //S_Action action;
-    Dictionary<KeyCode, S_Action> actions;
-    public bool moving = false;
+    private int bufferFrames;
+    private int _bufferFrames;
+    Dictionary<S_Key, S_Action> actions;
+    private bool moving = false;
+    private Player controller;
 
-    //[SerializeField] GameManager gm;
+    private const int MoveLeft = 0;
+    private const int MoveRight = 1;
+    private const int MoveUp = 2;
+    private const int MoveDown = 3;
+    private const int Ability0 = 4;
+    private const int Ability1 = 5;
+    private const int Ability2 = 6;
+    private const int Ability3 = 7;
+
+    #endregion
+
+    #region Inspector Variables
     [SerializeField] string trackName;
-    //[SerializeField] public Vector3 position;
     [SerializeField] string heroName;
     [SerializeField] public Transform projectilePrefab;
     #endregion
 
     #region Monobehaviour
     void Start () {
-        ac = transform.GetChild(0).GetComponent<S_AnimationController>();
-        ac.SetActor(actorName);
+        animationController = transform.GetChild(0).GetComponent<S_AnimationController>();
+        animationController.SetActor(actorName);
         rb = GetComponent<Rigidbody>();
-        actions = new Dictionary<KeyCode, S_Action>();
+        actions = new Dictionary<S_Key, S_Action>();
+        controller = ReInput.players.GetPlayer(0);
 
-        S_Action rest;
-        S_Actions.TryGetAction("rest", out rest);
-        actions.Add(KeyCode.None, rest);
+        //S_Action rest;
+        //S_Actions.TryGetAction("rest", out rest);
+        //actions.Add(S_Key.None, rest);
 
         S_Action move;
-        S_Actions.TryGetAction("actorMove", out move);
-        actions.Add(KeyCode.UpArrow, move);
-        actions.Add(KeyCode.RightArrow, move);
-        actions.Add(KeyCode.DownArrow, move);
-        actions.Add(KeyCode.LeftArrow, move);
+        S_Actions.i.TryGetAction("actorMove", out move);
+        actions.Add(S_Key.Up, move);
+        actions.Add(S_Key.Right, move);
+        actions.Add(S_Key.Down, move);
+        actions.Add(S_Key.Left, move);
 
         S_Action ability1;
-        S_Actions.TryGetAction(a1, out ability1);
-        actions.Add(KeyCode.Q, ability1);
+        S_Actions.i.TryGetAction(a1, out ability1);
+        actions.Add(S_Key.Q, ability1);
 
         S_Action ability2;
-        S_Actions.TryGetAction(a2, out ability2);
-        actions.Add(KeyCode.W, ability2);
+        S_Actions.i.TryGetAction(a2, out ability2);
+        actions.Add(S_Key.W, ability2);
 
         S_Action ability3;
-        S_Actions.TryGetAction(a2, out ability3);
-        actions.Add(KeyCode.E, ability3);
+        S_Actions.i.TryGetAction(a3, out ability3);
+        actions.Add(S_Key.E, ability3);
 
         S_Action ability4;
-        S_Actions.TryGetAction(a2, out ability4);
-        actions.Add(KeyCode.R, ability4);
+        S_Actions.i.TryGetAction(a4, out ability4);
+        actions.Add(S_Key.R, ability4);
 
-        preppedInput = KeyCode.None;
+        movementInputs = new KeyBuffer(2);
+        bufferedMovement = new KeyBuffer(2);
+        actionInputs = new KeyBuffer(4);
+        bufferedAction = new KeyBuffer(4);
+        _bufferFrames = 3;
 
         if (gm != null || GameManager.TryGetInstance(out gm))
             gm.AddActor(gameObject);
+        battleRhythm = gm.battleRhythm;
 
-        directionMemory = new Vector2(1, 0);
-        position = gm.ActorRandomSpawn(gameObject);
-        transform.position = gm.GetMap().GridToWorldPosition(position);
+        SetDirectionMemory(new Vector3(0f, 0f, -1f));
+        position = battleRhythm.MusicianRandomSpawn(this);
+        transform.position = battleRhythm.map.GridToWorldPosition(position);
         transform.position = new Vector3(transform.position.x + 0.5f, transform.position.y + 0.5f, transform.position.z + 0.5f);
 
-        gm.ActorEnterBattle(gameObject);
+        animationController.bpm = battleRhythm.GetBPM();
+
+        //br.AddMusician(this);
     }
 
-    void Update () {
-        latencyDelay--;
-
-        if (Input.GetKeyDown(KeyCode.UpArrow) && latencyDelay < 0)
-            preppedInput = KeyCode.UpArrow;
-        else if (Input.GetKeyDown(KeyCode.RightArrow) && latencyDelay < 0)
-            preppedInput = KeyCode.RightArrow;
-        else if (Input.GetKeyDown(KeyCode.DownArrow) && latencyDelay < 0)
-            preppedInput = KeyCode.DownArrow;
-        else if (Input.GetKeyDown(KeyCode.LeftArrow) && latencyDelay < 0)
-            preppedInput = KeyCode.LeftArrow;
-        else if (Input.GetKeyDown(KeyCode.Q) && latencyDelay < 0)
-            preppedInput = KeyCode.Q;
-        else if (Input.GetKeyDown(KeyCode.W) && latencyDelay < 0)
-            preppedInput = KeyCode.W;
-        else if (Input.GetKeyDown(KeyCode.Q) && latencyDelay < 0)
-            preppedInput = KeyCode.E;
-        else if (Input.GetKeyDown(KeyCode.W) && latencyDelay < 0)
-            preppedInput = KeyCode.R;
-        if (Input.anyKeyDown)
+    void Update()
+    {
+        if ((bufferedMovement.Count != 0 || bufferedAction.Count != 0) &&
+            bufferFrames-- != _bufferFrames)
         {
-            ac.ReceiveAction(preppedInput);
-            compensatePreBeat = 10;
-        }
+            GetInputs();
+            bufferedMovement.AddFrom(movementInputs);
+            bufferedAction.AddFrom(actionInputs);
 
-        if (compensatePostBeat > 0 && compensatePreBeat > 0)
-        {
-            if (actions.TryGetValue(preppedInput, out action))
-                action.Invoker(gameObject, gm);
-            gm.ActorFinishAction(gameObject);
-            compensatePostBeat = 0;
-            compensatePreBeat = 0;
+            if (bufferFrames <= 0)
+            {
+                actionKeys = bufferedAction.Or();
+                movementKeys = bufferedMovement.Or();
+                if (actions.TryGetValue(actionKeys, out action))
+                {
+                    action.Invoker(gameObject, battleRhythm);
+                    ResetInputs();
+                }
+                else if (actions.TryGetValue(movementKeys, out action))
+                {
+                    action.Invoker(gameObject, battleRhythm);
+                    ResetInputs();
+                }
+            }
         }
-        else if (compensatePostBeat == 1 && preppedInput == KeyCode.None)
-        {
-            if (actions.TryGetValue(preppedInput, out action))
-                action.Invoker(gameObject, gm);
-            gm.ActorFinishAction(gameObject);
-        }
-
-        compensatePostBeat = compensatePostBeat > 0 ? compensatePostBeat - 1 : compensatePostBeat;
-        compensatePreBeat = compensatePreBeat > 0 ? compensatePreBeat - 1 : compensatePreBeat;
     }
+
     #endregion
 
     #region External functions
 
+    public bool TryAction()
+    {
+        GetInputs();
+        if (actionInputs.Count != 0)
+        {
+            // If only an action key is held, buffer it for x frames
+            actionInputs.Copy(ref bufferedAction);
+            bufferFrames = _bufferFrames;
+        }
+        if (movementInputs.Count != 0)
+        {
+            // If only a movement key is held, buffer it for x frames
+            movementInputs.Copy(ref bufferedMovement);
+            bufferFrames = _bufferFrames;
+        }
+        return (actionInputs.Count != 0 || movementInputs.Count != 0);
+    }
+
+    private void GetInputs()
+    {
+        if (controller.GetAnyButtonDown())
+        {
+            int i = 0;
+            movementInputs.Clear();
+            try
+            {
+                if (controller.GetButtonDown(MoveLeft))
+                    movementInputs.Add(S_Key.Left);
+                else if (controller.GetButtonDown(MoveRight))
+                    movementInputs.Add(S_Key.Right);
+                else if (controller.GetButtonDown(MoveUp))
+                    movementInputs.Add(S_Key.Up);
+                else if (controller.GetButtonDown(MoveDown))
+                    movementInputs.Add(S_Key.Down);
+            }
+            catch (IndexOutOfRangeException e) { }
+
+            i = 0;
+            actionInputs.Clear();
+            try
+            {
+                if (controller.GetButtonDown(Ability0))
+                    actionInputs.Add(S_Key.Q);
+                else if (controller.GetButtonDown(Ability1))
+                    actionInputs.Add(S_Key.W);
+                else if (controller.GetButtonDown(Ability2))
+                    actionInputs.Add(S_Key.E);
+                else if (controller.GetButtonDown(Ability3))
+                    actionInputs.Add(S_Key.R);
+            }
+            catch (IndexOutOfRangeException e) { }
+        }
+    }
+
+    public override void ResetInputs()
+    {
+        base.ResetInputs();
+        movementInputs.Clear();
+        bufferedMovement.Clear();
+        actionInputs.Clear();
+        bufferedAction.Clear();
+    }
+
     override public void ReceiveBeat()
     {
         compensatePostBeat = 10;
-        ac.SyncUnlock();
     }
 
     override public void AnimationUpdate()
     {
-        ac.ReceiveAction(preppedInput);
-        ac.SyncUnlock();
     }
 
     override public float GetActionCost()
     {
         return action != null ? action.cost : 0.25f;
-    }
-    #endregion
-
-    #region Actions (legacy)
-    public void Move(params object[] args)
-    {
-        Vector3 newPos = new Vector3();
-        Vector3 newDirection = directionMemory;
-        switch (preppedInput)
-        {
-            case KeyCode.UpArrow:
-                newPos = new Vector3(position.x, position.y, position.z + 1);
-                newDirection = new Vector3(0, 0, 1);
-                break;
-            case KeyCode.RightArrow:
-                newPos = new Vector3(position.x + 1, position.y, position.z);
-                newDirection = new Vector3(1, 0, 0);
-                break;
-            case KeyCode.DownArrow:
-                newPos = new Vector3(position.x, position.y, position.z - 1);
-                newDirection = new Vector3(0, 0, -1);
-                break;
-            case KeyCode.LeftArrow:
-                newPos = new Vector3(position.x - 1, position.y, position.z);
-                newDirection = new Vector3(-1, 0, 0);
-                break;
-        }
-        Vector3 dest = gm.ActorMove(gameObject, newPos);
-        if (dest.y != -1)
-        {
-            position = dest;
-            moving = true;
-            //transform.position = gm.GetMap().GridToWorldPosition(dest);
-            //transform.position = new Vector3(transform.position.x + 0.5f, transform.position.y + 0.5f, transform.position.z);
-        }
-        float scaleX = transform.localScale.x;
-        if (newDirection.x != 0 && newDirection.x != directionMemory.x)
-            scaleX = newDirection.x;
-        transform.localScale = new Vector3(scaleX, transform.localScale.y, transform.localScale.z + 0.5f);
-        directionMemory = newDirection;
-
-        speed = 1;
-        return;
-    }
-
-    public void Shoot(params object[] args)
-    {
-        //BeatUpdate();
-        Transform p = Instantiate(projectilePrefab) as Transform;
-        Projectile projectile = p.GetComponent<Projectile>();
-        //Vector2 input = rb.velocity.magnitude < 0.1 ? directionMemory : rb.velocity;
-        projectile.Spawn(transform.position, directionMemory, magic);
-    }
-
-    public void Dash(params object[] args)
-    {
-        //BeatUpdate();
-        speed *= 2;
-    }
-
-    private void BeatUpdate()
-    {
-        if (transform.localScale.x == 1.0f)
-        {
-            transform.localScale = new Vector3(1.1f, 1.1f);
-        }
-        else if (transform.localScale.x == 1.1f)
-        {
-            transform.localScale = new Vector3(1.2f, 1.2f);
-        }
-        else if (transform.localScale.x == 1.2f)
-        {
-            transform.localScale = new Vector3(1.15f, 1.15f);
-        }
-        else if (transform.localScale.x == 1.15f)
-        {
-            transform.localScale = new Vector3(1.11f, 1.11f);
-        }
-        else if (transform.localScale.x == 1.11f)
-        {
-            transform.localScale = new Vector3(1.05f, 1.05f);
-        }
-        else if (transform.localScale.x == 1.05f)
-        {
-            transform.localScale = new Vector3(1.0f, 1.0f);
-        }
     }
     #endregion
 }

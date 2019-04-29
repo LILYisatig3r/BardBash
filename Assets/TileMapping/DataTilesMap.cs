@@ -163,7 +163,7 @@ public class DataTilesMap {
     }
     #endregion
 
-    #region Tile Construction
+    #region Public Methods
     public DataTile GetTile(int x, int y)
     {
         return tiles[x, y];
@@ -282,6 +282,17 @@ public class DataTilesMap {
         tiles[x, y].type = DataTile.TileType.stone;
         AS_weights[x, y] = 5;
     }
+
+    public Stack<Vector3> FindPath(Vector3 a, Vector3 b)
+    {
+        List<AS_Node> path = A_Star(a, b);
+        Stack<Vector3> ret = new Stack<Vector3>(path.Count);
+        foreach (AS_Node node in path)
+        {
+            ret.Push(new Vector3(node.x, 0, node.y));
+        }
+        return ret;
+    }
     #endregion
 
     #region A*
@@ -355,6 +366,61 @@ public class DataTilesMap {
             else
                 if (q.f < closedNodeCost)
                     closedList[closedNodePos] = (int)q.f;
+        }
+        return null;
+    }
+
+    private List<AS_Node> A_Star(Vector3 a, Vector3 b)
+    {
+        int gx = (int)b.x;
+        int gy = (int)b.z;
+        if (gx == (int)a.x && gy == (int)a.z)
+            return null;
+
+        AS_Node start = new AS_Node(null, (int)a.x, (int)a.z, 0, 0, 0);
+        PriorityQueueAS openList = new PriorityQueueAS(start);
+        Dictionary<Vector2, int> closedList = new Dictionary<Vector2, int>();
+
+        while (openList.Count() > 0)
+        {
+            AS_Node q = openList.Dequeue();
+
+            AS_Node[] successors = new AS_Node[4];
+            successors[0] = successors[1] = successors[2] = successors[3] = null;
+            if (q.x - 1 >= 0)
+                successors[0] = new AS_Node(q, q.x - 1, q.y, -1, q.g + 1 + AS_weights[q.x - 1, q.y], MD(q.x - 1, q.y, gx, gy));
+            if (q.x + 1 < size_x)
+                successors[1] = new AS_Node(q, q.x + 1, q.y, -1, q.g + 1 + AS_weights[q.x + 1, q.y], MD(q.x + 1, q.y, gx, gy));
+            if (q.y - 1 >= 0)
+                successors[2] = new AS_Node(q, q.x, q.y - 1, -1, q.g + 1 + AS_weights[q.x, q.y - 1], MD(q.x, q.y - 1, gx, gy));
+            if (q.y + 1 < size_y)
+                successors[3] = new AS_Node(q, q.x, q.y + 1, -1, q.g + 1 + AS_weights[q.x, q.y + 1], MD(q.x, q.y + 1, gx, gy));
+
+            foreach (AS_Node successor in successors)
+            {
+                if (successor != null)
+                {
+                    if (successor.x == gx && successor.y == gy)
+                        return Reconstruct(successor);
+
+                    int cost = 0;
+                    if (closedList.TryGetValue(new Vector2(successor.x, successor.y), out cost))
+                    {
+                        if (cost > successor.f)
+                            cost = 0;
+                    }
+
+                    if (cost <= 0)
+                        openList.Enqueue(successor);
+                }
+            }
+            int closedNodeCost;
+            Vector2 closedNodePos = new Vector2(q.x, q.y);
+            if (!closedList.TryGetValue(closedNodePos, out closedNodeCost))
+                closedList[closedNodePos] = (int)q.f;
+            else
+                if (q.f < closedNodeCost)
+                closedList[closedNodePos] = (int)q.f;
         }
         return null;
     }

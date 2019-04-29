@@ -91,7 +91,7 @@ public class PlayerController : MonoBehaviour {
         Transform p = Instantiate(projectilePrefab) as Transform;
         Projectile projectile = p.GetComponent<Projectile>();
         Vector2 input = _rigidbody.velocity.magnitude < 0.1 ? directionMemory : _rigidbody.velocity;
-        projectile.Spawn(transform.position, input, 1);
+        //projectile.Spawn(transform.position, input, 1);
     }
 
     public void Dash()
@@ -129,7 +129,7 @@ public class PlayerController : MonoBehaviour {
             Vector2 dM = new Vector2(directionMemory.x + Random.Range(-r, r), directionMemory.y + Random.Range(-r, r));
             Vector2 V = new Vector2(_rigidbody.velocity.x + Random.Range(-r, r), _rigidbody.velocity.y + Random.Range(-r, r));
             Vector2 input = _rigidbody.velocity.magnitude < 0.1 ? dM : V;
-            projectile.Spawn(transform.position, input, 1);
+            //projectile.Spawn(transform.position, input, 1);
         }
     }
 

@@ -8,6 +8,7 @@ public class Projectile : MonoBehaviour {
     private float lifespan = 1;
     private float damage = 1;
     private GameManager gm;
+    private S_Actor caster;
 
     [SerializeField]
     private float speed;
@@ -21,13 +22,14 @@ public class Projectile : MonoBehaviour {
         }
     }
 
-    public void Spawn(Vector3 position, Vector3 direction, float damage)
+    public void Spawn(S_Actor caster, Vector3 direction, float damage)
     {
         SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        this.caster = caster;
         sr.color = Random.ColorHSV();
         this.damage = damage;
 
-        transform.position = new Vector3(position.x, position.y - 0.25f, position.z);
+        transform.position = new Vector3(caster.transform.position.x, caster.transform.position.y - 0.25f, caster.transform.position.z);
         _rigidbody = GetComponent<Rigidbody>();
         direction = direction.normalized;
         if (direction.z != 0)
@@ -35,19 +37,19 @@ public class Projectile : MonoBehaviour {
         _rigidbody.velocity = new Vector3(direction.x * speed, direction.y * speed, direction.z * speed);
     }
 
-    void OnTriggerEnter(Collider c)
-    {
-        if (gm != null || GameManager.TryGetInstance(out gm))
-        {
-            if (c.tag.Equals("Enemy"))
-            {
-                gm.ActorDamaged(c.gameObject, damage);
-                Destroy(gameObject);
-            }
-            else if (c.tag.Equals("Terrain"))
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
+    //void OnTriggerEnter(Collider c)
+    //{
+    //    if (gm != null || GameManager.TryGetInstance(out gm))
+    //    {
+    //        if (c.tag.Equals("Enemy"))
+    //        {
+    //            gm.ActorDamaged(c.gameObject, caster.gameObject, damage, true);
+    //            Destroy(gameObject);
+    //        }
+    //        else if (c.tag.Equals("Terrain"))
+    //        {
+    //            Destroy(gameObject);
+    //        }
+    //    }
+    //}
 }

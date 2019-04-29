@@ -144,30 +144,6 @@ public class GraphicsTilesMap : MonoBehaviour {
             {
                 int index = z * vsizeX + x;
                 float y = 0;
-                //DataTile.TileType thisType = DataTile.TileType.none;
-                //DataTile.TileType[] neighbors = new DataTile.TileType[3];
-                //neighbors[0] = neighbors[1] = neighbors[2] = DataTile.TileType.none;
-                //if (x < vsizeX - 1 && z < vsizeZ - 1)
-                //    thisType = data.tiles[x, z].type;
-                //if (x > 0 && z < vsizeZ - 1)
-                //    neighbors[0] = data.tiles[x - 1, z].type;
-                //if (z > 0 && x < vsizeX - 1)
-                //    neighbors[2] = data.tiles[x, z - 1].type;
-                //if (x > 0 && z > 0)
-                //    neighbors[1] = data.tiles[x - 1, z - 1].type;
-
-                //if (thisType != DataTile.TileType.none)
-                //{
-                //    if (thisType == DataTile.TileType.grass || neighbors[0] == DataTile.TileType.grass
-                //        || neighbors[1] == DataTile.TileType.grass || neighbors[2] == DataTile.TileType.grass)
-                //        y = 1;
-                //    else if (thisType == DataTile.TileType.water && neighbors[0] == DataTile.TileType.water
-                //        && neighbors[1] == DataTile.TileType.water && neighbors[2] == DataTile.TileType.water)
-                //        y = Random.Range(0f, 0.5f);
-                //    else
-                //        y = Random.Range(1.1f, 2f);
-                //}
-
                 vertices[index] = new Vector3(x * tileSize, y, z * tileSize);
                 normals[index] = Vector3.up;
                 uv[index] = new Vector2((float)x / sizeX, (float)z / sizeZ);
@@ -233,7 +209,7 @@ public class GraphicsTilesMap : MonoBehaviour {
                 if (data.tiles[x, z].type == DataTile.TileType.grass && !data.tiles[x, z].occupant)
                     walkables.Add(new Vector3(x, 0f, z));
         Vector3 tilePosition = walkables[Random.Range(0, walkables.Count)];
-        GetTile((int)tilePosition.x, (int)tilePosition.y).occupant = a;
+        GetTile((int)tilePosition.x, (int)tilePosition.z).occupant = a;
         return tilePosition;
     }
 
@@ -245,6 +221,25 @@ public class GraphicsTilesMap : MonoBehaviour {
     public Vector2 GetSize()
     {
         return new Vector2(sizeX, sizeZ);
+    }
+
+    public Stack<Vector3> GetPath(Vector3 a, Vector3 b)
+    {
+        return data.FindPath(a, b);
+    }
+
+    public void PrintOccupants()
+    {
+        for (int z = 0; z < sizeZ; z++)
+        {
+            for (int x = 0; x < sizeX; x++)
+            {
+                if (data.tiles[x, z].occupant)
+                {
+                    Debug.Log(data.tiles[x, z].occupant.GetActorName() + ": " + x + ", " + z);
+                }
+            }
+        }
     }
 
     #endregion

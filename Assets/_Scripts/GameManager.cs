@@ -2,77 +2,60 @@
 using System.Collections.Generic;
 using UnityEngine;
 using SonicBloom.Koreo;
+using Assets._Scripts;
+using Rewired;
 
+/// <summary>
+/// Contains methods that perform vital game functions
+/// </summary>
 public class GameManager : MonoBehaviour {
 
     [SerializeField] Transform banner;
     [SerializeField] S_PlayerController player;
     [SerializeField] GraphicsTilesMap map;
     [SerializeField] string trackName;
-    private S_BattleRhythm battleRhythm;
+    [SerializeField] public S_Actor[] playerCharacters;
+    [SerializeField] public S_Actor[] npcCharacters;
+    [SerializeField] public S_Actions actions;
+    public S_BattleRhythm battleRhythm { get; private set; }
+    private Player playerController;
+
+    private const int MoveHorizontal = 0;
+    private const int MoveVertical = 1;
+    private const int Ability0 = 2;
+    private const int Ability1 = 3;
+    private const int Ability2 = 4;
+    private const int Ability3 = 5;
 
     private static Dictionary<GameObject, S_Actor> actors;
     private static GameManager instance = null;
 
     void Start()
     {
-        Koreographer.Instance.RegisterForEvents(trackName, ReceiveBeat);
         if (instance != null && instance != this)
         {
             Destroy(gameObject);
         }
+        playerController = ReInput.players.GetPlayer(0);
         battleRhythm = GetComponent<S_BattleRhythm>();
         instance = this;
         map.BuildMesh();
         Vector2 mapSize = map.GetSize();
         transform.position = new Vector3(mapSize.x / 2, 0, mapSize.y / 2);
         actors = new Dictionary<GameObject, S_Actor>();
-
     }
 
-    public void ActorDamaged(GameObject a, float damage)
+    public void Update()
     {
-        S_Actor actor;
-        if (!actors.TryGetValue(a, out actor))
+        //float x = playerController.GetAxis(MoveHorizontal);
+        //float y = playerController.GetAxis(MoveVertical);
+        //Debug.Log(new Vector2(x, y));
+
+        if (playerController.GetAnyButtonDown())
         {
-            actors[a] = actor = a.GetComponent<S_Actor>();
+            if (battleRhythm != null)
+                battleRhythm.ReceiveInput(playerController);
         }
-
-        actor.SetCurrentHp(actor.GetCurrentHp() - damage);
-        actor.PopupText("" + damage);
-        //ui.UpdateActorHealth(actor.GetCurrentHp(), actor.GetMaxHp(), a.tag);
-        if (actor.GetCurrentHp() <= 0)
-        {
-            ActorExitBattle(a);
-        }
-    }
-
-    public Vector3 ActorMove(GameObject a, Vector3 destination)
-    {
-        S_Actor actor;
-        if (!actors.TryGetValue(a, out actor))
-            actors[a] = actor = a.GetComponent<S_Actor>();
-
-        DataTile destTile = map.GetTile((int)destination.x, (int)destination.z);
-        if (destTile.type == DataTile.TileType.grass && !destTile.occupant)
-        {
-            map.GetTile((int)actor.position.x, (int)actor.position.z).occupant = null;
-            destTile.occupant = actor;
-            return destination;
-        }
-        else
-            return new Vector3(-1f, -1f, -1f);
-    }
-
-    public Vector3 ActorRandomSpawn(GameObject a)
-    {
-        S_Actor actor;
-        if (!actors.TryGetValue(a, out actor))
-            actors[a] = actor = a.GetComponent<S_Actor>();
-
-        DataTile spawnPoint = map.GetRandomWalkableTile();
-        spawnPoint.occupant = actor;
-        return map.OccupyRandomWalkableTile(actor);
     }
 
     public void AddActor(GameObject a)
@@ -80,26 +63,6 @@ public class GameManager : MonoBehaviour {
         S_Actor actor;
         if (!actors.TryGetValue(a, out actor))
             actors[a] = a.GetComponent<S_Actor>();
-    }
-
-    public void ActorEnterBattle(GameObject a)
-    {
-        S_Actor actor;
-        if (!actors.TryGetValue(a, out actor))
-            actors[a] = a.GetComponent<S_Actor>();
-
-        battleRhythm.AddMusician(a);
-    }
-
-    public void ActorExitBattle(GameObject a)
-    {
-        S_Actor actor;
-        if (!actors.TryGetValue(a, out actor))
-            actors[a] = a.GetComponent<S_Actor>();
-
-        if (battleRhythm.RemoveMusician(a) && battleRhythm.GetMusicianCount() <= 1)
-            FinishBattle();
-        Destroy(a);
     }
 
     public void ActorFinishAction(GameObject a)
@@ -111,17 +74,8 @@ public class GameManager : MonoBehaviour {
         battleRhythm.BeatUpdate();
     }
 
-    private void FinishBattle()
+    public void FinishBattle()
     {
-        battleRhythm.currentState = S_BattleRhythm.State.finished;
-    }
-
-    void ReceiveBeat(KoreographyEvent e)
-    {
-        if (battleRhythm.currentState == S_BattleRhythm.State.playing)
-            battleRhythm.GetActiveMusician().ReceiveBeat();
-        else
-            battleRhythm.BeatUpdate();
     }
 
     public S_Actor CheckTileOccupant(Vector3 tile)
@@ -129,9 +83,14 @@ public class GameManager : MonoBehaviour {
         return map.GetTile((int)tile.x, (int)tile.z).occupant;
     }
 
-    public GraphicsTilesMap GetMap()
+    public DataTile GetTile(Vector3 tile)
     {
-        return map;
+        return map.GetTile((int)tile.x, (int)tile.z);
+    }
+
+    public Stack<Vector3> GetPath(Vector3 a, Vector3 b)
+    {
+        return map.GetPath(a, b);
     }
 
     public static bool TryGetInstance(out GameManager gm)
@@ -146,4 +105,10 @@ public class GameManager : MonoBehaviour {
             return true;
         }
     }
+
+    public void PrintOccupants()
+    {
+        map.PrintOccupants();
+    }
+
 }

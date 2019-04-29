@@ -11,45 +11,120 @@ public class S_EnemyController : S_Actor {
     //[SerializeField] GameManager gm;
     [SerializeField] int beatDelay;
     [SerializeField] string trackName;
+    [SerializeField] int aggroDistance;
+    private bool directionSwitch;
     //[SerializeField] Vector3 position;
 
     Dictionary<KeyCode, S_Action> actions;
+
+    S_Action move;
+    S_Action melee;
+
+    Vector3[] unitDirections;
+    Vector3[] cardinals;
+
+    private Stack<Vector3> path;
 
     void Start () {
 
         if (gm != null || GameManager.TryGetInstance(out gm))
             gm.AddActor(gameObject);
+        battleRhythm = gm.battleRhythm;
         actions = new Dictionary<KeyCode, S_Action>();
-        S_AnimationController ac = transform.GetChild(0).GetComponent<S_AnimationController>();
-        ac.SetActor(actorName);
+        animationController = transform.GetChild(0).GetComponent<S_AnimationController>();
+        animationController.SetActor(actorName);
 
-        S_Action move;
-        S_Actions.TryGetAction("actorMove", out move);
-        actions.Add(KeyCode.UpArrow, move);
-        actions.Add(KeyCode.RightArrow, move);
-        actions.Add(KeyCode.DownArrow, move);
-        actions.Add(KeyCode.LeftArrow, move);
+        S_Actions.i.TryGetAction("actorDestinationMove", out move);
+        S_Actions.i.TryGetAction("Melee", out melee);
 
-        directionMemory = new Vector3(1, 0, 0);
-        position = gm.ActorRandomSpawn(gameObject);
-        transform.position = gm.GetMap().GridToWorldPosition(position);
+        SetDirectionMemory(new Vector3(0f, 0f, -1f));
+        position = battleRhythm.MusicianRandomSpawn(this);
+        transform.position = battleRhythm.map.GridToWorldPosition(position);
         transform.position = new Vector3(transform.position.x + 0.5f, transform.position.y + 0.5f, transform.position.z + 0.5f);
 
-        gm.ActorEnterBattle(gameObject);
+        unitDirections = new Vector3[4];
+        unitDirections[0] = new Vector3(0, 0, 1);
+        unitDirections[1] = new Vector3(1, 0, 0);
+        unitDirections[2] = new Vector3(0, 0, -1);
+        unitDirections[3] = new Vector3(-1, 0, 0);
+
+        cardinals = new Vector3[4];
+
+        //br.AddMusician(this);
     }
 
-    public override void ReceiveBeat()
+    public override void BeatUpdate()
     {
-        KeyCode[] randomActions = { KeyCode.UpArrow, KeyCode.DownArrow, KeyCode.RightArrow, KeyCode.LeftArrow };
-        preppedInput = randomActions[UnityEngine.Random.Range(0, 4)];
-        if (actions.TryGetValue(preppedInput, out action))
-            action.Invoker(gameObject, gm);
-        gm.ActorFinishAction(gameObject);
+        base.BeatUpdate();
+        DecideAction();
+    }
+
+    public override void PrepForNewTurn()
+    {
+        base.PrepForNewTurn();
+        //directionMemory = Vector3.zero;
+        directionSwitch = true;
+        PathToNearestPlayer();
     }
 
     override public float GetActionCost()
     {
         return action != null ? action.cost : 0.25f;
+    }
+
+    public void DecideAction()
+    {
+        // Try to attack a Player in a neighbouring tile
+        S_Actor occupant;
+        for (int i = 0; i < 4; i++)
+        {
+            cardinals[i] = position + unitDirections[i];
+            occupant = gm.CheckTileOccupant(cardinals[i]);
+            if (occupant is S_PlayerController)
+            {
+                SetDirectionMemory(unitDirections[i]);
+                melee.Invoker(gameObject, battleRhythm);
+                return;
+            }
+        }
+
+        if (path != null && path.Count > 1)
+        {
+            Vector3 dest = path.Pop();
+            currentDirection = dest - position;
+            move.Invoker(gameObject, battleRhythm);
+        }
+
+        //    // If you're not moving, pick the shortest plane of distance that isn't 0. You are now moving.
+        //    //
+        //    // If you're moving, try to keep moving in the same direction:
+        //    //  If you can, do so. **
+        //    //  If you can't:
+        //    //      Try to move in the other plane:
+        //    //          If you can, do so. **
+        //    //          If you can't, do nothing. **
+        //}
+    }
+
+    private void PathToNearestPlayer()
+    {
+        int minDistance = aggroDistance;
+        int distance;
+        S_Actor aggroedPlayer = null;
+        foreach (S_Actor player in battleRhythm.players)
+        {
+            distance = GetManhattanDistance(player);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                aggroedPlayer = player;
+            }
+        }
+
+        if (aggroedPlayer != null)
+        {
+            path = gm.GetPath(position, aggroedPlayer.position);
+        }
     }
 
 }
