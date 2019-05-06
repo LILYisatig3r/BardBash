@@ -283,9 +283,12 @@ public class DataTilesMap {
         AS_weights[x, y] = 5;
     }
 
-    public Stack<Vector3> FindPath(Vector3 a, Vector3 b)
+    public Stack<Vector3> FindPath(Vector3 a, Vector3 b, List<DataTile.TileType> impassables)
     {
-        List<AS_Node> path = A_Star(a, b);
+        List<AS_Node> path = A_Star(a, b, impassables);
+        if (path == null)
+            return null;
+
         Stack<Vector3> ret = new Stack<Vector3>(path.Count);
         foreach (AS_Node node in path)
         {
@@ -370,7 +373,7 @@ public class DataTilesMap {
         return null;
     }
 
-    private List<AS_Node> A_Star(Vector3 a, Vector3 b)
+    private List<AS_Node> A_Star(Vector3 a, Vector3 b, List<DataTile.TileType> impassables)
     {
         int gx = (int)b.x;
         int gy = (int)b.z;
@@ -410,7 +413,8 @@ public class DataTilesMap {
                             cost = 0;
                     }
 
-                    if (cost <= 0)
+                    DataTile tile = tiles[successor.x, successor.y];
+                    if (cost <= 0 && !impassables.Contains(tile.type) && tile.occupant == null)
                         openList.Enqueue(successor);
                 }
             }

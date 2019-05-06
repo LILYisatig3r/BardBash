@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -27,6 +28,8 @@ public class S_Actions : ScriptableObject {
 
     [Space]
     [SerializeField] private Transform MagicBlastAOE;
+    [Space]
+    [SerializeField] private Transform BasicCastEffect;
 
     public S_Actions()
     {
@@ -40,6 +43,7 @@ public class S_Actions : ScriptableObject {
         actions.Add("rogueDash", new S_Action(0.25f, S_RogueDash));
         actions.Add("magicBlast", new S_Action(0.25f, S_MagicBlast));
         actions.Add("explosiveEscape", new S_Action(0.25f, S_ExplosiveEscape));
+        actions.Add("Skip", new S_Action(0.25f, SkipTurn));
 
         meleeHash = Animator.StringToHash("Melee");
         idleHash = Animator.StringToHash("Reset");
@@ -61,6 +65,7 @@ public class S_Actions : ScriptableObject {
         actions.Add("rogueDash", new S_Action(0.25f, S_RogueDash));
         actions.Add("magicBlast", new S_Action(0.25f, S_MagicBlast));
         actions.Add("explosiveEscape", new S_Action(0.25f, S_ExplosiveEscape));
+        actions.Add("Skip", new S_Action(0.25f, SkipTurn));
 
         meleeHash = Animator.StringToHash("Melee");
         idleHash = Animator.StringToHash("Reset");
@@ -83,12 +88,57 @@ public class S_Actions : ScriptableObject {
     private void S_PlayerCast(params object[] args)
     {
         GameObject a = (GameObject)args[0];
-        S_PlayerController pc = a.GetComponent<S_PlayerController>();
-        Transform p = Instantiate(pc.projectilePrefab) as Transform;
-        Projectile projectile = p.GetComponent<Projectile>();
-        projectile.Spawn(pc, pc.directionMemory, pc.GetMagic());
+        S_Actor actor = a.GetComponent<S_Actor>();
+        S_BattleRhythm br = (S_BattleRhythm)args[1];
 
-        pc.SetAnimatorTrigger(castHash);
+        Vector3 attackDir = actor.directionMemory;
+        if (actor.movementKeys != S_Key.None)
+        {
+            SpriteRenderer sr = a.GetComponentInChildren<SpriteRenderer>();
+            switch (actor.movementKeys)
+            {
+                case S_Key.Left:
+                    attackDir = new Vector3(-1, 0, 0);
+                    sr.flipX = true; break;
+                case S_Key.Right:
+                    attackDir = new Vector3(1, 0, 0);
+                    sr.flipX = false; break;
+                case S_Key.Up:
+                    attackDir = new Vector3(0, 0, 1); break;
+                case S_Key.Down:
+                    attackDir = new Vector3(0, 0, -1); break;
+            }
+        }
+        actor.SetDirectionMemory(attackDir);
+
+        Vector3 target = new Vector3();
+        Vector3 p = actor.position;
+        Vector3 testPoint = p;
+        int i = 1;
+        while (target == Vector3.zero)
+        {
+            testPoint += attackDir;
+            DataTile testTile = br.GetTile(testPoint);
+            if (testTile.occupant != null || i == 16)
+                target = testPoint;
+            if (testTile.type != DataTile.TileType.grass)
+                target = testPoint - attackDir;
+            i++;
+        }
+
+        S_Actor occupant = br.GetTile(target).occupant;
+        if (occupant != null && occupant.team != actor.team)
+        {
+            br.MusicianDamaged(occupant, actor, actor.magic, true);
+            br.ShakeCamera(0.1f, 1.5f);
+            br.PlaySound(S_SoundEffectsSO.Instance.GetRandomBashSoundEffect());
+        }
+
+        S_BasicCastEffect castEffect = Instantiate(BasicCastEffect).GetComponent<S_BasicCastEffect>();
+        castEffect.transform.position = actor.position + new Vector3(0.5f, 0.5f, 0.5f);
+        castEffect.Initialize(p, target, attackDir, 0.15f);
+
+        actor.SetAnimatorTrigger(castHash);
     }
 
     private void S_MagicBlast(params object[] args)
@@ -183,10 +233,17 @@ public class S_Actions : ScriptableObject {
         while (destinationPoint == actor.position && i > 0)
         {
             testPoint = new Vector3(p.x - (dm.x * i), p.y, p.z - (dm.z * i));
-            DataTile testTile = br.GetTile(testPoint);
-            if (testTile.occupant == null && testTile.type == DataTile.TileType.grass)
-                destinationPoint = testPoint;
-            i--;
+            try
+            {
+                DataTile testTile = br.GetTile(testPoint);
+                if (testTile.occupant == null && testTile.type == DataTile.TileType.grass)
+                    destinationPoint = testPoint;
+                i--;
+            }
+            catch (IndexOutOfRangeException e)
+            {
+                i--;
+            }
         }
 
         actor.SetAnimatorTrigger(castHash);
@@ -390,5 +447,14 @@ public class S_Actions : ScriptableObject {
             }
         }
 
+    }
+
+    private void SkipTurn(params object[] args)
+    {
+        GameObject a = (GameObject)args[0];
+        S_BattleRhythm br = (S_BattleRhythm)args[1];
+        S_Actor actor = a.GetComponent<S_Actor>();
+
+        br.DecrementMeasures(br.remainingMeasures);
     }
 }

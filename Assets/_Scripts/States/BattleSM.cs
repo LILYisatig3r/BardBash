@@ -126,5 +126,10 @@ public partial class S_BattleRhythm
         {
             battleRhythm.TransitionMusician();
         }
+
+        public void CameraControl()
+        {
+            ChangeState(E_BattleState.cameraControl);
+        }
     }
 }

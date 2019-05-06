@@ -19,6 +19,7 @@ public class S_EnemyController : S_Actor {
 
     S_Action move;
     S_Action melee;
+    S_Action skip;
 
     Vector3[] unitDirections;
     Vector3[] cardinals;
@@ -36,6 +37,7 @@ public class S_EnemyController : S_Actor {
 
         S_Actions.i.TryGetAction("actorDestinationMove", out move);
         S_Actions.i.TryGetAction("Melee", out melee);
+        S_Actions.i.TryGetAction("Skip", out skip);
 
         SetDirectionMemory(new Vector3(0f, 0f, -1f));
         position = battleRhythm.MusicianRandomSpawn(this);
@@ -95,6 +97,11 @@ public class S_EnemyController : S_Actor {
             move.Invoker(gameObject, battleRhythm);
         }
 
+        else
+        {
+            skip.Invoker(gameObject, battleRhythm);
+        }
+
         //    // If you're not moving, pick the shortest plane of distance that isn't 0. You are now moving.
         //    //
         //    // If you're moving, try to keep moving in the same direction:
@@ -123,7 +130,7 @@ public class S_EnemyController : S_Actor {
 
         if (aggroedPlayer != null)
         {
-            path = gm.GetPath(position, aggroedPlayer.position);
+            path = gm.GetPath(position, aggroedPlayer.position, new List<DataTile.TileType>(){DataTile.TileType.stone});
         }
     }
 

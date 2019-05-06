@@ -51,7 +51,7 @@ public class GameManager : MonoBehaviour {
         //float y = playerController.GetAxis(MoveVertical);
         //Debug.Log(new Vector2(x, y));
 
-        if (playerController.GetAnyButtonDown())
+        if (playerController.GetAnyButton())
         {
             if (battleRhythm != null)
                 battleRhythm.ReceiveInput(playerController);
@@ -88,9 +88,9 @@ public class GameManager : MonoBehaviour {
         return map.GetTile((int)tile.x, (int)tile.z);
     }
 
-    public Stack<Vector3> GetPath(Vector3 a, Vector3 b)
+    public Stack<Vector3> GetPath(Vector3 a, Vector3 b, List<DataTile.TileType> impassables)
     {
-        return map.GetPath(a, b);
+        return map.GetPath(a, b, impassables);
     }
 
     public static bool TryGetInstance(out GameManager gm)

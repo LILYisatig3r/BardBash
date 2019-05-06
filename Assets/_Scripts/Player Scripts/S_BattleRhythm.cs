@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public partial class S_BattleRhythm : MonoBehaviour {
@@ -60,6 +61,10 @@ public partial class S_BattleRhythm : MonoBehaviour {
     private bool bannerExtended;
     [SerializeField] Transform turnQueueUI;
     Image[] turnQueueImages;
+    [SerializeField] EventSystem eventSystem;
+    [SerializeField] Transform battleMenu;
+    public Button startButton { get; private set; }
+    public Button viewMapButton { get; private set; }
 
     // Battle and Camera state machines
     private BattleSM battleStateMachine;
@@ -111,6 +116,10 @@ public partial class S_BattleRhythm : MonoBehaviour {
         turnQueueImages[3] = turnQueueUI.GetChild(3).GetComponent<Image>();
         turnQueueImages[4] = turnQueueUI.GetChild(4).GetComponent<Image>();
         turnQueueImages[5] = turnQueueUI.GetChild(5).GetComponent<Image>();
+        eventSystem = EventSystem.current;
+        startButton = battleMenu.GetChild(0).GetComponent<Button>();
+        viewMapButton = battleMenu.GetChild(1).GetComponent<Button>();
+        eventSystem.SetSelectedGameObject(null);
 
         // Add all musicians
         AddAllMusicians();
@@ -357,12 +366,6 @@ public partial class S_BattleRhythm : MonoBehaviour {
 
     public Vector3 MusicianRandomSpawn(S_Actor actor)
     {
-        //S_Actor actor;
-        //if (!actors.TryGetValue(a, out actor))
-        //    actors[a] = actor = a.GetComponent<S_Actor>();
-
-        //DataTile spawnPoint = map.GetRandomWalkableTile();
-        //spawnPoint.occupant = actor;
         return map.OccupyRandomWalkableTile(actor);
     }
 
@@ -406,6 +409,16 @@ public partial class S_BattleRhythm : MonoBehaviour {
     {
         battleStateMachine.ChangeState(state);
     }
+
+    public void SetBattleMenuActive(bool a)
+    {
+        if (a)
+        {
+            eventSystem.SetSelectedGameObject(startButton.gameObject);
+        }
+        else
+            eventSystem.SetSelectedGameObject(null);
+    }
     #endregion
 
     private IEnumerator StartSequence()
@@ -427,7 +440,6 @@ public partial class S_BattleRhythm : MonoBehaviour {
     {
         if (!bannerExtended)
         {
-            Debug.Log("Banner extending!");
             bannerExtended = !bannerExtended;
             bannerPortrait.sprite = activeMusician.GetPortrait();
             bannerName.color = activeMusician.GetPrimaryColor();
@@ -440,7 +452,6 @@ public partial class S_BattleRhythm : MonoBehaviour {
         }
         else
         {
-            Debug.Log("Banner retracting!");
             bannerExtended = !bannerExtended;
             while (banner.transform.localPosition.x > -130f)
             {

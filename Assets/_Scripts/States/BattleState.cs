@@ -42,23 +42,103 @@ public partial class S_BattleRhythm
 
     private class BS_CameraControl : BattleState
     {
+        private bool overview = false;
+
+        private List<S_Actor> actors;
+
+        private Vector3 up = new Vector3(0f, 0f, 0.075f);
+        private Vector3 right = new Vector3(0.075f, 0f, 0f);
+        private Vector3 down = new Vector3(0f, 0f, -0.075f);
+        private Vector3 left = new Vector3(-0.075f, 0f, 0f);
+
+        private const int MoveLeft = 0;
+        private const int MoveRight = 1;
+        private const int MoveUp = 2;
+        private const int MoveDown = 3;
+        private const int Ability0 = 4;
+        private const int Ability1 = 5;
+        private const int Ability2 = 6;
+        private const int Ability3 = 7;
+        private const int UISubmit = 10;
+        private const int UICancel = 11;
+        private const int Shift = 12;
+        private const int SpaceBar = 13;
+
         public BS_CameraControl(BattleSM machine) : base(machine)
         {
+            cam = br.cam;
+            actors = br.o;
         }
 
         public override void Enter(S_BattleRhythm br)
         {
-            throw new System.NotImplementedException();
+            target = br.activeMusician.position;
         }
 
         public override void Execute()
         {
-            throw new System.NotImplementedException();
+            UpdateCamPositionTowardsTarget();
         }
 
         public override void Exit()
         {
-            throw new System.NotImplementedException();
+            target = br.activeMusician.position;
+        }
+
+        public override void ReceiveInput(Player p)
+        {
+            if (p.GetButtonDown(UISubmit))
+                Overview();
+
+            if (!overview)
+            {
+                if (p.GetButtonDown(Ability2))
+                    cam.orthographicSize += 1.5f;
+                else if (p.GetButtonDown(Ability3))
+                    cam.orthographicSize -= 1.5f;
+
+                float m = 1f;
+                if (p.GetButton(Ability0))
+                    m = 2f;
+
+                if (p.GetButton(MoveUp))
+                    target += (m * up);
+                else if (p.GetButton(MoveDown))
+                    target += (m * down);
+
+                if (p.GetButton(MoveRight))
+                    target += (m * right);
+                else if (p.GetButton(MoveLeft))
+                    target += (m * left);
+
+                if (p.GetButton(UICancel))
+                    sm.ChangeState(Assets._Scripts.E_BattleState.playerMenu);
+            }
+        }
+
+        private void Overview()
+        {
+            if (!overview)
+            {
+                overview = true;
+                float minx = Mathf.Infinity, maxx = 0, minz = Mathf.Infinity, maxz = 0;
+                foreach (S_Actor actor in actors)
+                {
+                    Vector3 ap = actor.transform.position;
+                    minx = Mathf.Min(minx, ap.x);
+                    maxx = Mathf.Max(maxx, ap.x);
+                    minz = Mathf.Min(minz, ap.z);
+                    maxz = Mathf.Max(maxz, ap.z);
+                }
+                cam.orthographicSize = Mathf.Max(3f, Mathf.Max((maxx - minx) * 1.41f, maxz - minz) / 4f);
+                target = new Vector3((minx + maxx) / 2, 0f, (minz + maxz) / 2);
+            }
+            else
+            {
+                overview = false;
+                cam.orthographicSize = 3.5f;
+                target = br.activeMusician.position;
+            }
         }
     }
 
@@ -271,11 +351,27 @@ public partial class S_BattleRhythm
                 case IS.Wait:
                     break;
             }
+        }
 
+        public override void ReceiveInput(Player p)
+        {
+            //if (br.TryPlayerAction())
+            //    BeatExecute();
 
-            
-            //cam.orthographicSize += (camSize - cam.orthographicSize) * Time.deltaTime;
-            
+            switch (introState)
+            {
+                case IS.PanActor:
+                    SwitchISState(IS.PanOverview);
+                    break;
+                case IS.PanOverview:
+                    UpdateCamPositionTowardsTarget();
+                    timeWaited += Time.deltaTime;
+                    if (Input.anyKeyDown && timeWaited > waitTime)
+                        sm.StartPlayerMenu();
+                    break;
+                case IS.Wait:
+                    break;
+            }
         }
 
         override public void Exit()
@@ -408,8 +504,18 @@ public partial class S_BattleRhythm
 
     private class BS_PlayerMenu : BattleState
     {
+        private const int Ability0 = 4;
+        private const int Ability1 = 5;
+        private const int Ability2 = 6;
+        private const int Ability3 = 7;
+
+        private UnityEngine.Events.UnityAction startTurn;
+        private UnityEngine.Events.UnityAction camControl;
+
         public BS_PlayerMenu(BattleSM machine) : base(machine)
         {
+            startTurn = sm.StartMusicianTurn;
+            camControl = sm.CameraControl;
         }
 
         public override void Enter(S_BattleRhythm br)
@@ -417,6 +523,9 @@ public partial class S_BattleRhythm
             cam.orthographicSize = 3.5f;
             target = br.activeMusician.transform.position;
             br.Banner();
+            br.SetBattleMenuActive(true);
+            br.startButton.onClick.AddListener(startTurn);
+            br.viewMapButton.onClick.AddListener(camControl);
         }
 
         public override void Execute()
@@ -424,14 +533,20 @@ public partial class S_BattleRhythm
             UpdateCamPositionTowardsTarget();
         }
 
-        public override void ReceiveInput(Player p)
-        {
-            sm.StartMusicianTurn();
-        }
-
         public override void Exit()
         {
             br.Banner();
+            br.SetBattleMenuActive(false);
+            br.startButton.onClick.RemoveListener(startTurn);
+            br.viewMapButton.onClick.RemoveListener(camControl);
+        }
+
+        public override void ReceiveInput(Player p)
+        {
+            if (p.GetButtonDown(Ability0))
+                sm.StartMusicianTurn();
+            else if (p.GetButtonDown(Ability1))
+                sm.CameraControl();
         }
     }
 

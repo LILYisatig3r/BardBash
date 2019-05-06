@@ -223,9 +223,9 @@ public class GraphicsTilesMap : MonoBehaviour {
         return new Vector2(sizeX, sizeZ);
     }
 
-    public Stack<Vector3> GetPath(Vector3 a, Vector3 b)
+    public Stack<Vector3> GetPath(Vector3 a, Vector3 b, List<DataTile.TileType> impassables)
     {
-        return data.FindPath(a, b);
+        return data.FindPath(a, b, impassables);
     }
 
     public void PrintOccupants()
